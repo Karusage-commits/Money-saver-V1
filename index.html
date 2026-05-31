@@ -117,7 +117,7 @@
                     <div>
                         <div class="text-gray-800 font-black text-sm mb-1 flex items-center gap-1" id="header-month-label">本月結餘 💰</div>
                         <div class="flex items-baseline gap-1">
-                            <span class="text-2xl font-black">HK$</span>
+                            <span class="text-2xl font-black" id="header-currency-symbol">HK$</span>
                             <span class="text-4xl font-black tracking-tight" id="total-balance">0</span>
                         </div>
                     </div>
@@ -128,14 +128,14 @@
                         <div class="bg-white/30 rounded-full p-1"><i class="ph-bold ph-arrow-down-left text-white"></i></div>
                         <div>
                             <div class="text-[10px] font-black text-gray-800">收入(換算)</div>
-                            <div class="font-black text-gray-900 leading-none">$<span id="total-income">0</span></div>
+                            <div class="font-black text-gray-900 leading-none" id="total-income">0</div>
                         </div>
                     </div>
                     <div class="flex-1 bg-[#FFD166] rounded-xl p-2 cartoon-border cartoon-shadow-sm flex items-center gap-2">
                         <div class="bg-white/40 rounded-full p-1"><i class="ph-bold ph-arrow-up-right text-gray-800"></i></div>
                         <div>
                             <div class="text-[10px] font-black text-gray-800">支出(換算)</div>
-                            <div class="font-black text-gray-900 leading-none">$<span id="total-expense">0</span></div>
+                            <div class="font-black text-gray-900 leading-none" id="total-expense">0</div>
                         </div>
                     </div>
                 </div>
@@ -173,7 +173,7 @@
                     <div class="bg-white mx-4 rounded-3xl p-3 cartoon-border cartoon-shadow-sm shrink-0">
                         <div class="flex justify-between items-center mb-3 px-2">
                             <button onclick="changeMonth(-1)" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 active-press"><i class="ph-bold ph-caret-left"></i></button>
-                            <div id="calendar-month-display" class="font-black text-gray-800 tracking-wide text-sm"></div>
+                            <div id="calendar-month-display" class="font-black text-gray-800 tracking-wide text-sm">載入中...</div>
                             <button onclick="changeMonth(1)" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 active-press"><i class="ph-bold ph-caret-right"></i></button>
                         </div>
                         <div id="calendar-strip" class="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth pb-1 px-1"></div>
@@ -188,6 +188,7 @@
                     </div>
                 </div>
 
+                <!-- 圖表視圖 -->
                 <div id="view-chart" class="hidden p-4 pt-2">
                     <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 px-1">
                         <button onclick="setChartPeriod('weekly')" id="filter-weekly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0">本週</button>
@@ -197,7 +198,7 @@
 
                     <div class="mb-6">
                         <div class="bg-white p-4 rounded-3xl cartoon-border cartoon-shadow-sm flex flex-col items-center">
-                            <div class="text-sm font-black text-gray-800 mb-2">總收支對比 (HKD)</div>
+                            <div id="overview-chart-title" class="text-sm font-black text-gray-800 mb-2">總收支對比</div>
                             <div class="relative w-full aspect-square max-w-[180px]"><canvas id="overviewChart"></canvas></div>
                             <div id="overview-empty-state" class="hidden text-center text-gray-400 mt-4 text-xs font-bold">這段時間沒有紀錄喔🤷‍♂️</div>
                         </div>
@@ -222,6 +223,7 @@
                     </div>
                 </div>
 
+                <!-- 匯率計算機視圖 -->
                 <div id="view-currency" class="hidden p-4 pt-2">
                     <div class="bg-white p-5 rounded-3xl cartoon-border cartoon-shadow-sm mb-6">
                         <div class="flex items-center gap-2 mb-4">
@@ -250,7 +252,7 @@
                         <div class="text-right text-[10px] font-bold text-gray-400 mt-3"><span id="rate-status">🔄 匯率已更新</span></div>
                     </div>
                     <div class="bg-white p-5 rounded-3xl cartoon-border cartoon-shadow-sm">
-                        <h2 class="text-sm font-black text-gray-500 mb-4 bg-gray-100 px-3 py-1 rounded-full inline-block">100 港幣換算參考</h2>
+                        <h2 id="quick-rates-title" class="text-sm font-black text-gray-500 mb-4 bg-gray-100 px-3 py-1 rounded-full inline-block">100 換算參考</h2>
                         <div class="grid grid-cols-2 gap-3" id="quick-rates-container"></div>
                     </div>
                 </div>
@@ -276,6 +278,17 @@
                     <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
                 </div>
                 <div class="overflow-y-auto no-scrollbar flex-1 space-y-4 py-2">
+                    
+                    <!-- 🌟 主要貨幣設定 -->
+                    <div class="bg-white p-4 rounded-2xl border-2 border-slate-800 shadow-sm">
+                        <h4 class="text-sm font-black text-slate-800 mb-1">💱 主要貨幣設定</h4>
+                        <p class="text-[10px] font-bold text-gray-500 mb-3">更改管家計算總資產的預設貨幣 (更改後會自動為您換算歷史紀錄)。</p>
+                        <div class="flex gap-2">
+                            <select id="base-currency-select" class="flex-1 bg-gray-50 cartoon-border rounded-xl px-2 py-2 font-bold focus:outline-none text-sm"></select>
+                            <button onclick="saveBaseCurrency()" class="bg-[#118AB2] text-white px-3 py-2 rounded-xl font-black cartoon-border border-2 text-xs active-press shrink-0">套用</button>
+                        </div>
+                    </div>
+
                     <div class="bg-white p-4 rounded-2xl border-2 border-slate-800 shadow-sm">
                         <h4 class="text-sm font-black text-slate-800 mb-1">💾 資料移轉與備份</h4>
                         <p class="text-[10px] font-bold text-gray-500 mb-3">資料存放於本機，更換裝置或清除瀏覽器紀錄前，請務必匯出備份檔案！</p>
@@ -334,10 +347,10 @@
             <div class="bg-white p-6 rounded-[30px] cartoon-border cartoon-shadow z-10 w-full max-w-[320px] slide-up">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-xl font-black text-gray-800">設定本月預算 🎯</h3>
-                    <button onclick="closeBudgetModal()" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
+                    <button onclick="closeBudgetModal()"><i class="ph-bold ph-x"></i></button>
                 </div>
                 <div class="flex gap-2 mb-6 h-14">
-                    <span class="flex items-center justify-center bg-gray-100 cartoon-border rounded-xl px-4 font-black text-gray-600">HK$</span>
+                    <span id="budget-currency-symbol" class="flex items-center justify-center bg-gray-100 cartoon-border rounded-xl px-4 font-black text-gray-600">HK$</span>
                     <input type="number" id="budget-input" placeholder="例如: 5000" class="flex-1 bg-gray-50 cartoon-border rounded-xl px-4 text-xl font-black focus:outline-none min-w-0" inputmode="numeric">
                 </div>
                 <button onclick="saveBudget()" class="w-full bg-[#06D6A0] text-gray-900 py-3 rounded-2xl font-black cartoon-border cartoon-shadow-sm active-press">確定設定</button>
@@ -397,7 +410,7 @@
         </div>
     </div>
 
-    <!-- 🌟 真正的純本地 JavaScript 邏輯 (完全沒有 Firebase) 🌟 -->
+    <!-- 🌟 真正的純本地 JavaScript 邏輯 (完全沒有 Firebase，包含完整圖表繪製) 🌟 -->
     <script>
         // 核心狀態變數
         let currentUser = null;
@@ -406,6 +419,7 @@
         let monthlyBudget = 0; 
         let customBgUrl = null; 
         let userLocation = { name: '香港', lat: 22.3193, lon: 114.1694 };
+        let userBaseCurrency = 'hkd'; // 🌟 新增：使用者自訂的主要貨幣
 
         let expenseChartInstance = null, incomeChartInstance = null, trendChartInstance = null, overviewChartInstance = null;
         let currentChartPeriod = 'weekly';
@@ -428,15 +442,14 @@
             ]
         };
 
-        const BASE_CURRENCY = 'hkd'; 
         const supportedCurrencies = {
             'hkd': { code: 'HKD', name: '港幣', symbol: '$', decimals: 2 },
             'twd': { code: 'TWD', name: '台幣', symbol: 'NT$', decimals: 0 },
             'usd': { code: 'USD', name: '美金', symbol: '$', decimals: 2 },
             'jpy': { code: 'JPY', name: '日圓', symbol: '¥', decimals: 0 },
+            'cny': { code: 'CNY', name: '人民幣', symbol: '¥', decimals: 2 },
             'eur': { code: 'EUR', name: '歐元', symbol: '€', decimals: 2 },
             'gbp': { code: 'GBP', name: '英鎊', symbol: '£', decimals: 2 },
-            'cny': { code: 'CNY', name: '人民幣', symbol: '¥', decimals: 2 },
             'krw': { code: 'KRW', name: '韓元', symbol: '₩', decimals: 0 },
             'btc': { code: 'BTC', name: '比特幣', symbol: '₿', decimals: 6 },
             'eth': { code: 'ETH', name: '以太幣', symbol: 'Ξ', decimals: 5 },
@@ -445,7 +458,7 @@
         };
         
         let exchangeRates = {
-            hkd: 1, twd: 4.15, usd: 0.128, jpy: 19.8, eur: 0.118, gbp: 0.10, cny: 0.92, krw: 175.5,
+            hkd: 1, twd: 4.15, usd: 0.128, jpy: 19.8, cny: 0.92, eur: 0.118, gbp: 0.10, krw: 175.5,
             btc: 0.0000019, eth: 0.000034, usdt: 0.128, sol: 0.00075
         };
 
@@ -453,7 +466,7 @@
         let selectedCategory = 'food';
 
         // ==========================================
-        // 🔒 本地帳戶登入邏輯
+        // 🔒 本地帳號密碼註冊與登入
         // ==========================================
         let isRegisterMode = false;
         const viewAuth = document.getElementById('view-auth');
@@ -461,67 +474,112 @@
         const authUsername = document.getElementById('auth-username');
         const authPassword = document.getElementById('auth-password');
         const authError = document.getElementById('auth-error');
-        const btnLogin = document.getElementById('btn-login');
-        const btnRegister = document.getElementById('btn-register');
 
         document.getElementById('auth-toggle-mode').onclick = () => {
             isRegisterMode = !isRegisterMode;
             authError.classList.add('hidden');
             if (isRegisterMode) {
                 document.getElementById('auth-title').innerText = '請管家為您開通金庫 🐣';
-                btnLogin.classList.add('hidden'); btnRegister.classList.remove('hidden');
+                document.getElementById('username-label').innerText = '設定帳號名稱';
+                document.getElementById('password-label').innerText = '設定密碼 (至少 4 碼)';
+                document.getElementById('btn-login').classList.add('hidden');
+                document.getElementById('btn-register').classList.remove('hidden');
                 document.getElementById('auth-toggle-mode').innerHTML = '已有帳號？<span class="text-[#118AB2] underline underline-offset-2">請管家核對開門</span>';
             } else {
                 document.getElementById('auth-title').innerText = '管家為您服務！';
-                btnLogin.classList.remove('hidden'); btnRegister.classList.add('hidden');
+                document.getElementById('username-label').innerText = '專屬帳號 (不需Email)';
+                document.getElementById('password-label').innerText = '密碼';
+                document.getElementById('btn-login').classList.remove('hidden');
+                document.getElementById('btn-register').classList.add('hidden');
                 document.getElementById('auth-toggle-mode').innerHTML = '還沒有帳號？<span class="text-[#118AB2] underline underline-offset-2">請管家建檔</span>';
             }
         };
 
         function showAuthError(msg) { authError.innerText = msg; authError.classList.remove('hidden'); }
 
+        function getUsers() { return JSON.parse(localStorage.getItem('money_saver_users') || '{}'); }
+
         function handleLogin() {
-            const user = authUsername.value.trim().toLowerCase();
-            const pass = authPassword.value;
-            if(!user || !pass) return showAuthError('請填寫帳號與密碼');
-            const users = JSON.parse(localStorage.getItem('ms_v1_users') || '{}');
-            if(users[user] === pass) {
-                loginSuccess(user);
+            const username = authUsername.value.trim().toLowerCase();
+            const password = authPassword.value;
+            if (!username || !password) return showAuthError('請填寫帳號與密碼');
+
+            const users = getUsers();
+            if (users[username] && users[username] === password) {
+                loginSuccess(username);
             } else {
-                showAuthError('帳號或密碼錯誤');
+                showAuthError('帳號或密碼不正確喔！');
             }
         }
 
         function handleRegister() {
-            const user = authUsername.value.trim().toLowerCase();
-            const pass = authPassword.value;
-            if(!user || pass.length < 4) return showAuthError('請填寫帳號，且密碼至少4碼');
-            const users = JSON.parse(localStorage.getItem('ms_v1_users') || '{}');
-            if(users[user]) return showAuthError('這名稱已經有人用囉！');
-            users[user] = pass;
-            localStorage.setItem('ms_v1_users', JSON.stringify(users));
+            const username = authUsername.value.trim().toLowerCase();
+            const password = authPassword.value;
+            if (!username || password.length < 4) return showAuthError('帳號不可為空，且密碼至少需要 4 碼喔');
+
+            const users = getUsers();
+            if (users[username]) return showAuthError('這個帳號名稱已經有人使用囉');
+
+            users[username] = password;
+            localStorage.setItem('money_saver_users', JSON.stringify(users));
             showToast('專屬金庫建檔成功！🎉', '✅');
-            loginSuccess(user);
+            loginSuccess(username);
         }
 
-        function handleGuestLogin() {
-            loginSuccess('guest');
-        }
+        function handleGuestLogin() { loginSuccess('guest'); }
 
         function loginSuccess(username) {
             currentUser = username;
-            localStorage.setItem('ms_v1_last_user', username);
+            localStorage.setItem('money_saver_logged_in_user', username);
+            
             viewAuth.classList.add('hidden');
             viewMain.classList.remove('hidden');
             document.getElementById('user-display').innerText = username === 'guest' ? '訪客主人' : username;
             
-            loadLocalData();
+            loadUserData();
             showToast('歡迎回來！本地金庫已安全打開！', '🔑');
         }
 
+        function loadUserData() {
+            if (!currentUser) return;
+            
+            transactions = JSON.parse(localStorage.getItem(`txs_${currentUser}`) || '[]');
+            creditCards = JSON.parse(localStorage.getItem(`cards_${currentUser}`) || '[]');
+            monthlyBudget = parseFloat(localStorage.getItem(`budget_${currentUser}`) || '0');
+            customBgUrl = localStorage.getItem(`bg_${currentUser}`) || null;
+            userBaseCurrency = localStorage.getItem(`ms_base_currency_${currentUser}`) || 'hkd'; // 讀取自訂貨幣
+            
+            const weatherData = localStorage.getItem(`weather_${currentUser}`);
+            userLocation = weatherData ? JSON.parse(weatherData) : { name: '香港', lat: 22.3193, lon: 114.1694 };
+
+            applyBg();
+            
+            // 同步選擇器的預設貨幣
+            document.getElementById('base-currency-select').value = userBaseCurrency;
+            document.getElementById('currency-select').value = userBaseCurrency;
+            document.getElementById('calc-from-currency').value = userBaseCurrency;
+            
+            document.getElementById('budget-input').value = monthlyBudget > 0 ? monthlyBudget : '';
+            fetchWeather(userLocation.lat, userLocation.lon, userLocation.name);
+            renderCardList();
+            renderQuickRates();
+            updateUI();
+        }
+
+        function saveAllToLocal() {
+            if (!currentUser) return;
+            localStorage.setItem(`txs_${currentUser}`, JSON.stringify(transactions));
+            localStorage.setItem(`cards_${currentUser}`, JSON.stringify(creditCards));
+            localStorage.setItem(`budget_${currentUser}`, monthlyBudget.toString());
+            localStorage.setItem(`weather_${currentUser}`, JSON.stringify(userLocation));
+            localStorage.setItem(`ms_base_currency_${currentUser}`, userBaseCurrency); // 儲存自訂貨幣
+            if (customBgUrl) localStorage.setItem(`bg_${currentUser}`, customBgUrl);
+            else localStorage.removeItem(`bg_${currentUser}`);
+        }
+
         function handleLogout() {
-            showDialog('鎖上金庫？', '確定要退出您的本地金庫嗎？', 'confirm', () => {
-                localStorage.removeItem('ms_v1_last_user');
+            showDialog('鎖上金庫？', '確定要鎖上金庫登出嗎？', 'confirm', () => {
+                localStorage.removeItem('money_saver_logged_in_user');
                 currentUser = null; transactions = []; creditCards = [];
                 viewMain.classList.add('hidden'); viewAuth.classList.remove('hidden');
                 authUsername.value = ''; authPassword.value = '';
@@ -529,97 +587,99 @@
         }
 
         // ==========================================
-        // 💾 本地資料儲存與讀取 (核心安全)
-        // ==========================================
-        function loadLocalData() {
-            if(!currentUser) return;
-            transactions = JSON.parse(localStorage.getItem(`ms_txs_${currentUser}`) || '[]');
-            creditCards = JSON.parse(localStorage.getItem(`ms_cards_${currentUser}`) || '[]');
-            monthlyBudget = parseFloat(localStorage.getItem(`ms_budget_${currentUser}`) || '0');
-            customBgUrl = localStorage.getItem(`ms_bg_${currentUser}`) || null;
-            userLocation = JSON.parse(localStorage.getItem(`ms_weather_${currentUser}`) || '{"name":"香港","lat":22.3193,"lon":114.1694}');
-            
-            applyBg();
-            document.getElementById('budget-input').value = monthlyBudget > 0 ? monthlyBudget : '';
-            renderCardList();
-            fetchWeather(userLocation.lat, userLocation.lon, userLocation.name);
-            updateUI();
-        }
-
-        function saveAllToLocal() {
-            if(!currentUser) return;
-            localStorage.setItem(`ms_txs_${currentUser}`, JSON.stringify(transactions));
-            localStorage.setItem(`ms_cards_${currentUser}`, JSON.stringify(creditCards));
-            localStorage.setItem(`ms_budget_${currentUser}`, monthlyBudget.toString());
-            localStorage.setItem(`ms_weather_${currentUser}`, JSON.stringify(userLocation));
-            if(customBgUrl) localStorage.setItem(`ms_bg_${currentUser}`, customBgUrl);
-            else localStorage.removeItem(`ms_bg_${currentUser}`);
-        }
-
-        // ==========================================
-        // 💾 備份與還原系統
+        // 💾 金庫備份與還原系統
         // ==========================================
         function openSettingsModal() { document.getElementById('settings-modal').classList.remove('hidden'); }
         function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
 
         function exportBackup() {
-            if(!currentUser) return;
-            const data = {
-                money_saver_backup: true, version: "1.0", username: currentUser,
-                transactions, creditCards, monthlyBudget, customBgUrl, userLocation
+            if (!currentUser) return;
+            const backupData = {
+                money_saver_backup: true, version: "1.1", username: currentUser,
+                transactions: transactions, creditCards: creditCards, monthlyBudget: monthlyBudget,
+                customBgUrl: customBgUrl, userLocation: userLocation, userBaseCurrency: userBaseCurrency,
+                exportDate: dayjs().format('YYYY-MM-DD HH:mm:ss')
             };
-            const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Backup_${currentUser}_${dayjs().format('YYYYMMDD')}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            showToast('已匯出備份檔案！', '✅');
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `Money_Saver_Backup_${currentUser}_${dayjs().format('YYYYMMDD')}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click(); downloadAnchor.remove();
+            showToast('金庫資料已封裝為備份檔下載！💾', '✅');
         }
 
         function importBackup(event) {
-            const file = event.target.files[0];
-            if(!file) return;
+            const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if(!imported.money_saver_backup) return showDialog('還原失敗', '這不是有效的備份檔', 'alert');
-                    transactions = imported.transactions || [];
-                    creditCards = imported.creditCards || [];
-                    monthlyBudget = parseFloat(imported.monthlyBudget) || 0;
-                    customBgUrl = imported.customBgUrl || null;
-                    userLocation = imported.userLocation || userLocation;
+                    if (!imported.money_saver_backup) return showDialog('還原失敗', '這不是有效備份檔案！', 'alert');
+
+                    transactions = imported.transactions || []; creditCards = imported.creditCards || [];
+                    monthlyBudget = parseFloat(imported.monthlyBudget) || 0; customBgUrl = imported.customBgUrl || null;
+                    userLocation = imported.userLocation || { name: '香港', lat: 22.3193, lon: 114.1694 };
+                    userBaseCurrency = imported.userBaseCurrency || 'hkd';
 
                     saveAllToLocal(); applyBg();
+                    document.getElementById('base-currency-select').value = userBaseCurrency;
                     document.getElementById('budget-input').value = monthlyBudget > 0 ? monthlyBudget : '';
-                    renderCardList(); updateUI(); closeSettingsModal();
-                    showDialog('還原成功！', '您的資料已完美恢復！', 'success');
-                } catch(err) { showDialog('檔案損毀', '無法讀取此檔案', 'alert'); }
+                    renderCardList(); renderQuickRates(); updateUI(); closeSettingsModal();
+                    showDialog('金庫還原成功！', '歷史帳目與設定已完美還原至您的手機中！🎉', 'success');
+                } catch(err) { showDialog('檔案損毀', '解析檔案時出錯。', 'alert'); }
             };
             reader.readAsText(file);
-            document.getElementById('backup-file-input').value = '';
+            document.getElementById('backup-file-input').value = ''; 
         }
 
         // ==========================================
-        // 🖼️ 自訂佈景
+        // 💱 🌟 主要貨幣設定系統
         // ==========================================
-        function openBgModal() { /* 現已移至設定中心 */ }
-        function closeBgModal() { /* 現已移至設定中心 */ }
+        function saveBaseCurrency() {
+            const newBase = document.getElementById('base-currency-select').value;
+            if (newBase === userBaseCurrency) { closeSettingsModal(); return; }
+            
+            const oldBase = userBaseCurrency;
+            userBaseCurrency = newBase;
+
+            // 1. 將所有歷史紀錄轉換為新基礎貨幣的等值 BaseAmount
+            transactions.forEach(tx => {
+                tx.baseAmount = (tx.amount / exchangeRates[tx.currency]) * exchangeRates[userBaseCurrency];
+            });
+
+            // 2. 轉換現有預算
+            if (monthlyBudget > 0) {
+                monthlyBudget = (monthlyBudget / exchangeRates[oldBase]) * exchangeRates[newBase];
+                document.getElementById('budget-input').value = Math.round(monthlyBudget);
+            }
+
+            saveAllToLocal();
+            updateUI();
+            renderQuickRates();
+            document.getElementById('currency-select').value = userBaseCurrency;
+            
+            closeSettingsModal();
+            showToast(`已成功切換主要貨幣為 ${supportedCurrencies[userBaseCurrency].name}！`, '✅');
+        }
+
+        // ==========================================
+        // 🖼️ 背景照片自訂系統 
+        // ==========================================
         function handleBgUpload(event) {
-            const file = event.target.files[0]; if(!file) return;
+            const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let w = img.width, h = img.height; const MAX = 800;
-                    if(w > h && w > MAX) { h *= MAX/w; w = MAX; } else if(h > MAX) { w *= MAX/h; h = MAX; }
+                    const canvas = document.createElement('canvas'); const MAX = 800; 
+                    let w = img.width, h = img.height;
+                    if (w > h && w > MAX) { h *= MAX / w; w = MAX; } else if (h > MAX) { w *= MAX / h; h = MAX; }
                     canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    customBgUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    applyBg(); saveAllToLocal(); showToast('背景已更換！', '✅');
+                    customBgUrl = canvas.toDataURL('image/jpeg', 0.6); 
+                    applyBg(); saveAllToLocal(); showToast('專屬背景壁紙已更換！✨', '✅');
                 };
                 img.src = e.target.result;
             };
@@ -627,19 +687,52 @@
             document.getElementById('bg-file-input').value = ''; 
         }
 
-        function removeBg() {
-            customBgUrl = null; applyBg(); saveAllToLocal(); showToast('已恢復預設！', '✅');
-        }
-
+        function removeBg() { customBgUrl = null; applyBg(); saveAllToLocal(); showToast('已恢復預設背景！', '✅'); }
         function applyBg() {
-            const container = document.getElementById('app-container');
-            const overlay = document.getElementById('app-bg-overlay');
-            if (customBgUrl) { container.style.backgroundImage = `url(${customBgUrl})`; overlay.classList.remove('hidden'); } 
-            else { container.style.backgroundImage = 'none'; overlay.classList.add('hidden'); }
+            const c = document.getElementById('app-container'), o = document.getElementById('app-bg-overlay');
+            if (customBgUrl) { c.style.backgroundImage = `url(${customBgUrl})`; o.classList.remove('hidden'); } 
+            else { c.style.backgroundImage = 'none'; o.classList.add('hidden'); }
         }
 
         // ==========================================
-        // UI 共用邏輯
+        // 🎯 預算設定系統 
+        // ==========================================
+        function openBudgetModal() { document.getElementById('budget-modal').classList.remove('hidden'); document.getElementById('budget-input').focus(); }
+        function closeBudgetModal() { document.getElementById('budget-modal').classList.add('hidden'); }
+        function saveBudget() {
+            const val = parseFloat(document.getElementById('budget-input').value); monthlyBudget = (isNaN(val) || val <= 0) ? 0 : val;
+            closeBudgetModal(); saveAllToLocal(); updateUI();
+            if (monthlyBudget > 0) showToast('本月預算設定成功！🎯', '✅'); else showToast('預算已取消！', '✅');
+        }
+
+        // ==========================================
+        // 💳 信用卡與日常提醒通知
+        // ==========================================
+        function addCreditCard() {
+            const n = document.getElementById('card-name-input').value.trim(), d = parseInt(document.getElementById('card-date-input').value);
+            if (!n || isNaN(d) || d < 1 || d > 31) return showToast('請輸入正確的卡片名稱與結帳日(1-31)', '❌');
+            creditCards.push({ id: Date.now().toString(), name: n, dueDate: d, lastPaidMonth: '' });
+            saveAllToLocal(); document.getElementById('card-name-input').value = ''; document.getElementById('card-date-input').value = '';
+            renderCardList(); checkNotifications(); showToast('已加入還款追蹤！', '✅');
+        }
+        function markCardPaid(id) {
+            const c = creditCards.find(c => c.id === id); if (c) { c.lastPaidMonth = dayjs().format('YYYY-MM'); saveAllToLocal(); renderCardList(); checkNotifications(); showToast('太棒了！已標記為繳清！', '✅'); }
+        }
+        function deleteCard(id) {
+            if (confirm('確定要取消這張卡的還款提醒嗎？')) { creditCards = creditCards.filter(c => c.id !== id); saveAllToLocal(); renderCardList(); checkNotifications(); }
+        }
+        function renderCardList() {
+            const container = document.getElementById('card-list-container'); container.innerHTML = ''; const currentMonth = dayjs().format('YYYY-MM');
+            if(creditCards.length === 0) return container.innerHTML = `<div class="text-center text-gray-400 text-xs py-2">目前沒有設定任何信用卡</div>`;
+            creditCards.forEach(c => {
+                const isPaid = c.lastPaidMonth === currentMonth;
+                const btnHtml = isPaid ? `<span class="text-[10px] font-black text-[#06D6A0] bg-[#06D6A0]/10 px-2 py-1 rounded-lg border border-[#06D6A0]/30">✅ 本月已繳</span>` : `<button onclick="markCardPaid('${c.id}')" class="text-xs font-black bg-[#06D6A0] text-gray-900 px-3 py-1 rounded-lg cartoon-border border-2 active-press shadow-sm">標記已繳</button>`;
+                container.innerHTML += `<div class="bg-white p-3 rounded-2xl cartoon-border border-2 flex justify-between items-center mb-2"><div><div class="font-black text-sm">${c.name}</div><div class="text-[10px] font-bold text-gray-500">每月 ${c.dueDate} 號結帳</div></div><div class="flex items-center gap-2">${btnHtml}<button onclick="deleteCard('${c.id}')" class="text-gray-400 hover:text-red-500 ml-1"><i class="ph-bold ph-trash text-sm"></i></button></div></div>`;
+            });
+        }
+
+        // ==========================================
+        // 🔔 系統推播通知邏輯
         // ==========================================
         function showToast(msg, icon = '🔔') {
             const toast = document.createElement('div');
@@ -650,42 +743,62 @@
             setTimeout(() => { toast.classList.add('-translate-y-[150%]', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
         }
 
-        function showDialog(title, message, type, callback) {
-            document.getElementById('custom-dialog').classList.remove('hidden');
-            document.getElementById('dialog-title').innerText = title; document.getElementById('dialog-message').innerText = message;
-            const cancelBtn = document.getElementById('dialog-cancel'); const confirmBtn = document.getElementById('dialog-confirm');
-            if (type === 'confirm') {
-                document.getElementById('dialog-icon').innerText = '🗑️'; cancelBtn.classList.remove('hidden');
-                confirmBtn.className = 'flex-1 bg-[#EF476F] text-white py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '刪除';
-            } else if (type === 'success') {
-                document.getElementById('dialog-icon').innerText = '🎉'; cancelBtn.classList.add('hidden');
-                confirmBtn.className = 'flex-1 bg-[#06D6A0] text-gray-900 py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '太棒了！';
-            } else {
-                document.getElementById('dialog-icon').innerText = '😲'; cancelBtn.classList.add('hidden');
-                confirmBtn.className = 'flex-1 bg-[#06D6A0] text-gray-900 py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '知道了';
-            }
-            confirmBtn.onclick = () => { closeDialog(); if (callback) callback(); };
+        function checkNotifications() {
+            const notifContainer = document.getElementById('notif-list'); notifContainer.innerHTML = ''; let hasNew = false;
+            const todayStr = dayjs().format('YYYY-MM-DD'); const hasToday = transactions.some(t => t.date === todayStr);
+            if (!hasToday) { notifContainer.innerHTML += createNotifHTML('🔔', '管家提醒', '今天還沒記帳喔！別讓金庫漏算任何一筆開銷。', '今日'); hasNew = true; } 
+            else { notifContainer.innerHTML += createNotifHTML('🎉', '管家稱讚', '太棒了！今天有乖乖記帳，給您一個大大的讚！👍', '今日'); }
+            
+            const currentMonth = dayjs().format('YYYY-MM'); const todayObj = dayjs().startOf('day');
+            creditCards.forEach(card => {
+                if (card.lastPaidMonth === currentMonth) return;
+                let dueThisMonth = dayjs().date(card.dueDate).startOf('day'), diffDays = dueThisMonth.diff(todayObj, 'day');
+                if (diffDays < 0) { notifContainer.innerHTML += createNotifHTML('🚨', '卡數逾期！', `「${card.name}」已超過結帳日！請盡快處理喔！`, '緊急'); hasNew = true; } 
+                else if (diffDays === 0) { notifContainer.innerHTML += createNotifHTML('💳', '今日結帳！', `「${card.name}」今天結帳！記得去繳納喔！`, '今日'); hasNew = true; } 
+                else if (diffDays <= 7) { notifContainer.innerHTML += createNotifHTML('💳', '卡數即將到期', `「${card.name}」還有 ${diffDays} 天結帳 (本月 ${card.dueDate} 號)。`, '提醒'); hasNew = true; }
+            });
+            
+            let monthExpense = 0, monthIncome = 0; const viewMonthStart = displayMonth.startOf('month');
+            transactions.forEach(tx => { const d = dayjs(tx.date); if(d.isAfter(viewMonthStart) || d.isSame(viewMonthStart, 'day')) { if(tx.type === 'expense') monthExpense += tx.baseAmount; else monthIncome += tx.baseAmount; } });
+            if (monthExpense > monthIncome * 0.8 && monthIncome > 0) { notifContainer.innerHTML += createNotifHTML('🚨', '預算警報', '本月花費已達收入的 80% 囉！稍微留意一下。', '系統'); hasNew = true; }
+            
+            const badge = document.getElementById('notif-badge');
+            if (hasNew) badge.classList.remove('hidden'); else badge.classList.add('hidden');
         }
-        function closeDialog() { document.getElementById('custom-dialog').classList.add('hidden'); }
+        function createNotifHTML(icon, title, desc, time) { return `<div class="bg-gray-50 p-3 rounded-2xl cartoon-border border-2 flex gap-3 mb-2 items-center"><div class="text-2xl shrink-0">${icon}</div><div class="flex-1 min-w-0"><div class="flex justify-between items-center mb-0.5"><span class="font-black text-gray-800 text-sm truncate pr-2">${title}</span><span class="text-[10px] font-bold text-gray-400 shrink-0">${time}</span></div><div class="text-xs font-bold text-gray-500 leading-tight">${desc}</div></div></div>`; }
+        function openNotifModal() { document.getElementById('notif-modal').classList.remove('hidden'); document.getElementById('notif-badge').classList.add('hidden'); }
+        function closeNotifModal() { document.getElementById('notif-modal').classList.add('hidden'); }
+        function requestNotificationPermission() { if ("Notification" in window) { Notification.requestPermission().then(permission => { if (permission === "granted") { showToast('已成功開啟系統推播！', '✅'); new Notification("開支小管家", { body: "測試通知：管家在此為您服務！🤖" }); } else { showToast('已拒絕或不支援推播通知', '❌'); } }); } else { showToast('您的瀏覽器不支援推播功能', '❌'); } }
 
         // ==========================================
-        // 匯率、天氣
+        // 💱 匯率與天氣系統 
         // ==========================================
         async function fetchExchangeRates() {
             try {
                 const res = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/hkd.json`);
                 const data = await res.json();
                 Object.keys(supportedCurrencies).forEach(key => { if (data.hkd[key]) exchangeRates[key] = data.hkd[key]; });
-                document.getElementById('rate-status').innerText = '🔄 匯率已更新';
-            } catch(e) { document.getElementById('rate-status').innerText = '⚠️ 離線使用預設匯率'; }
+                document.getElementById('rate-status').innerText = '🔄 匯率已更新至最新';
+            } catch(e) { document.getElementById('rate-status').innerText = '⚠️ 離線模式 (使用預設匯率)'; }
             renderQuickRates(); calculateExchange();
         }
 
         function initCurrencySelects() {
-            let opts = ''; for (let key in supportedCurrencies) opts += `<option value="${key}">${supportedCurrencies[key].code}</option>`;
-            document.getElementById('currency-select').innerHTML = opts; document.getElementById('currency-select').value = 'hkd';
-            document.getElementById('calc-from-currency').innerHTML = opts; document.getElementById('calc-from-currency').value = 'hkd';
-            document.getElementById('calc-to-currency').innerHTML = opts; document.getElementById('calc-to-currency').value = 'btc';
+            let optionsHTML = '';
+            for (let key in supportedCurrencies) optionsHTML += `<option value="${key}">${supportedCurrencies[key].code} ${supportedCurrencies[key].name}</option>`;
+            
+            // 賦值給所有下拉選單
+            document.getElementById('currency-select').innerHTML = optionsHTML; 
+            document.getElementById('currency-select').value = userBaseCurrency;
+            
+            document.getElementById('calc-from-currency').innerHTML = optionsHTML; 
+            document.getElementById('calc-from-currency').value = userBaseCurrency;
+            
+            document.getElementById('calc-to-currency').innerHTML = optionsHTML; 
+            document.getElementById('calc-to-currency').value = 'usd';
+            
+            document.getElementById('base-currency-select').innerHTML = optionsHTML;
+            document.getElementById('base-currency-select').value = userBaseCurrency;
         }
 
         function calculateExchange() {
@@ -693,63 +806,73 @@
             const toCur = document.getElementById('calc-to-currency').value;
             const amount = parseFloat(document.getElementById('calc-amount').value) || 0;
             const finalAmount = (amount / exchangeRates[fromCur]) * exchangeRates[toCur];
-            const sym = supportedCurrencies[toCur].symbol, dec = supportedCurrencies[toCur].decimals;
+            const sym = supportedCurrencies[toCur].symbol;
+            const dec = supportedCurrencies[toCur].decimals;
             document.getElementById('calc-result').innerText = `${sym} ${finalAmount.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec})}`;
         }
 
         function renderQuickRates() {
             const container = document.getElementById('quick-rates-container'); container.innerHTML = '';
-            ['twd', 'jpy', 'usd', 'btc', 'eth', 'sol'].forEach(cur => {
-                const amount = 100 * exchangeRates[cur]; const info = supportedCurrencies[cur];
-                let disp = amount < 1 ? amount.toFixed(info.decimals) : Math.round(amount).toLocaleString();
-                container.innerHTML += `<div class="bg-gray-50 border-2 border-gray-100 rounded-xl p-3 flex items-center justify-between"><span class="text-xs font-black text-gray-500">${info.name}</span><span class="font-black text-gray-800">${info.symbol} ${disp}</span></div>`;
+            document.getElementById('quick-rates-title').innerText = `100 ${supportedCurrencies[userBaseCurrency].name}換算參考`;
+            
+            // 選擇要顯示的其他貨幣 (排除當前主要貨幣)
+            const baseRates = ['twd', 'jpy', 'usd', 'hkd', 'eur', 'cny', 'gbp'].filter(c => c !== userBaseCurrency).slice(0, 6);
+            
+            baseRates.forEach(cur => {
+                const amount = (100 / exchangeRates[userBaseCurrency]) * exchangeRates[cur];
+                const info = supportedCurrencies[cur];
+                let displayAmount = amount < 1 ? amount.toFixed(info.decimals) : Math.round(amount).toLocaleString();
+                const div = document.createElement('div');
+                div.className = 'bg-gray-50 border-2 border-gray-100 rounded-xl p-3 flex items-center justify-between';
+                div.innerHTML = `<span class="text-xs font-black text-gray-500">${info.name}</span><span class="font-black text-gray-800">${info.symbol} ${displayAmount}</span>`;
+                container.appendChild(div);
             });
         }
 
         async function fetchWeather(lat, lon, locName) {
             try {
-                document.getElementById('weather-text').innerText = '觀測中...'; document.getElementById('weather-icon').innerText = '⏳';
+                document.getElementById('weather-text').innerText = '管家觀測天氣中...'; document.getElementById('weather-icon').innerText = '⏳';
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
                 const data = await res.json();
                 const temp = Math.round(data.current_weather.temperature), code = data.current_weather.weathercode;
-                let icon = '☀️', sub = '好天氣！';
-                if (code >= 1 && code <= 3) { icon = '⛅'; sub = '涼爽舒適🚶'; } else if (code >= 45 && code <= 48) { icon = '🌫️'; sub = '注意安全👀'; } else if (code >= 51 && code <= 67) { icon = '🌧️'; sub = '記得帶傘☔'; } else if (code >= 71 && code <= 77) { icon = '❄️'; sub = '穿暖和點⛄'; } else if (code >= 95) { icon = '⛈️'; sub = '待在室內⚡'; }
+                let icon = '☀️', sub = '好天氣，適合出門走走！';
+                if (code >= 1 && code <= 3) { icon = '⛅'; sub = '涼爽舒適的一天🚶'; } else if (code >= 45 && code <= 48) { icon = '🌫️'; sub = '注意安全喔👀'; } else if (code >= 51 && code <= 67) { icon = '🌧️'; sub = '出門記得帶傘喔☔'; } else if (code >= 71 && code <= 77) { icon = '❄️'; sub = '記得穿暖和一點⛄'; } else if (code >= 95) { icon = '⛈️'; sub = '待在室內比較安全⚡'; }
                 document.getElementById('weather-icon').innerText = icon; document.getElementById('weather-text').innerText = `${locName} ${temp}°C`; document.getElementById('weather-subtext').innerText = sub;
                 userLocation = { name: locName, lat, lon }; saveAllToLocal();
-            } catch(e) { document.getElementById('weather-icon').innerText = '❌'; document.getElementById('weather-text').innerText = '載入失敗'; }
+            } catch(e) { document.getElementById('weather-icon').innerText = '❌'; document.getElementById('weather-text').innerText = '天氣載入失敗'; }
         }
         function openWeatherModal() { document.getElementById('weather-modal').classList.remove('hidden'); }
         function closeWeatherModal() { document.getElementById('weather-modal').classList.add('hidden'); }
         function useCurrentLocation() {
             if (navigator.geolocation) {
-                closeWeatherModal(); document.getElementById('weather-text').innerText = '定位中...';
+                closeWeatherModal(); document.getElementById('weather-text').innerText = '管家定位中...';
                 navigator.geolocation.getCurrentPosition(async (pos) => {
                     try {
                         const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=zh`);
                         const data = await res.json(); fetchWeather(pos.coords.latitude, pos.coords.longitude, data.city || data.locality || '當地');
                     } catch(e) { fetchWeather(pos.coords.latitude, pos.coords.longitude, '當前位置'); }
-                }, () => fetchWeather(userLocation.lat, userLocation.lon, userLocation.name));
+                }, () => { fetchWeather(userLocation.lat, userLocation.lon, userLocation.name); });
             }
         }
         async function searchCityWeather() {
             const city = document.getElementById('city-input').value.trim(); if(!city) return;
-            closeWeatherModal(); document.getElementById('weather-text').innerText = '尋找中...';
+            closeWeatherModal(); document.getElementById('weather-text').innerText = '管家尋找城市中...';
             try {
-                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=zh`);
-                const data = await res.json();
-                if(data.results?.length > 0) fetchWeather(data.results[0].latitude, data.results[0].longitude, data.results[0].name);
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=zh`);
+                const geoData = await geoRes.json();
+                if(geoData.results?.length > 0) fetchWeather(geoData.results[0].latitude, geoData.results[0].longitude, geoData.results[0].name);
                 else fetchWeather(userLocation.lat, userLocation.lon, userLocation.name);
             } catch(e) { fetchWeather(userLocation.lat, userLocation.lon, userLocation.name); }
         }
 
         // ==========================================
-        // 記帳與日曆
+        // ✍️ 記帳儲存與日曆渲染
         // ==========================================
         function changeMonth(step) { displayMonth = displayMonth.add(step, 'month'); renderCalendar(); updateUI(); }
         function renderCalendar() {
             const container = document.getElementById('calendar-strip'); container.innerHTML = '';
             document.getElementById('calendar-month-display').innerText = displayMonth.format('YYYY年M月');
-            const daysInMonth = displayMonth.daysInMonth(), currentMonthStr = displayMonth.format('YYYY-MM');
+            const daysInMonth = displayMonth.daysInMonth(); const currentMonthStr = displayMonth.format('YYYY-MM');
             let selectedBtn = null;
             for(let i=1; i<=daysInMonth; i++) {
                 const dateObj = dayjs(`${currentMonthStr}-${i}`), dateStr = dateObj.format('YYYY-MM-DD');
@@ -764,6 +887,24 @@
             if (selectedBtn) setTimeout(() => selectedBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 50);
         }
 
+        function showDialog(title, message, type, callback) {
+            document.getElementById('custom-dialog').classList.remove('hidden');
+            document.getElementById('dialog-title').innerText = title; document.getElementById('dialog-message').innerText = message;
+            const cancelBtn = document.getElementById('dialog-cancel'), confirmBtn = document.getElementById('dialog-confirm');
+            if (type === 'confirm') {
+                document.getElementById('dialog-icon').innerText = '🗑️'; cancelBtn.classList.remove('hidden');
+                confirmBtn.className = 'flex-1 bg-[#EF476F] text-white py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '刪除';
+            } else if (type === 'success') {
+                document.getElementById('dialog-icon').innerText = '🎉'; cancelBtn.classList.add('hidden');
+                confirmBtn.className = 'flex-1 bg-[#06D6A0] text-gray-900 py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '太棒了！';
+            } else {
+                document.getElementById('dialog-icon').innerText = '😲'; cancelBtn.classList.add('hidden');
+                confirmBtn.className = 'flex-1 bg-[#06D6A0] text-gray-900 py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '知道了';
+            }
+            confirmBtn.onclick = () => { closeDialog(); if (callback) callback(); };
+        }
+        function closeDialog() { document.getElementById('custom-dialog').classList.add('hidden'); }
+
         function setType(type) {
             currentType = type;
             document.getElementById('type-expense').className = type === 'expense' ? 'flex-1 py-3 rounded-2xl text-sm font-black bg-[#FFD166] text-gray-900 cartoon-border cartoon-shadow-sm active-press' : 'flex-1 py-3 rounded-2xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200';
@@ -774,11 +915,9 @@
         function renderCategoryButtons() {
             const container = document.getElementById('category-container'); container.innerHTML = '';
             categories[currentType].forEach(cat => {
-                const btn = document.createElement('button');
-                btn.onclick = () => { selectedCategory = cat.id; renderCategoryButtons(); };
+                const btn = document.createElement('button'); btn.onclick = () => { selectedCategory = cat.id; renderCategoryButtons(); };
                 btn.className = `flex flex-col items-center justify-center p-3 rounded-2xl transition-all ${selectedCategory === cat.id ? `${cat.bg} ${cat.text} cartoon-border cartoon-shadow-sm transform -translate-y-1` : `bg-white border-2 border-gray-200 text-gray-400`}`;
-                btn.innerHTML = `<i class="ph-fill ${cat.icon} text-2xl mb-1"></i><span class="text-xs font-black">${cat.name}</span>`;
-                container.appendChild(btn);
+                btn.innerHTML = `<i class="ph-fill ${cat.icon} text-2xl mb-1"></i><span class="text-xs font-black">${cat.name}</span>`; container.appendChild(btn);
             });
         }
 
@@ -792,73 +931,99 @@
 
         function saveTransaction() {
             const amount = parseFloat(document.getElementById('amount-input').value);
-            if (isNaN(amount) || amount <= 0) return showDialog('哎呀！', '忘記填寫金額囉！', 'alert');
-            if (!currentUser) return showDialog('錯誤', '請先登入', 'alert');
+            if (isNaN(amount) || amount <= 0) { showDialog('哎呀！', '忘記填寫金額囉，請輸入數字！', 'alert'); return; }
+            if (!currentUser) { showDialog('稍等一下', '請先登入帳號，管家才能為您記帳喔！', 'alert'); return; }
+
             const currency = document.getElementById('currency-select').value;
-            let baseAmount = currency !== BASE_CURRENCY ? amount / exchangeRates[currency] : amount;
+            // 🌟 將輸入的貨幣換算成「使用者自訂的主要貨幣」
+            let baseAmount = (amount / exchangeRates[currency]) * exchangeRates[userBaseCurrency];
+
             const newDate = document.getElementById('date-input').value;
-            
-            transactions.push({
+            const newTx = {
                 id: Date.now().toString(), type: currentType, amount: amount, currency: currency,
                 baseAmount: baseAmount, category: selectedCategory, date: newDate, note: document.getElementById('note-input').value
-            });
-            closeModal(); selectedDate = newDate; displayMonth = dayjs(newDate).startOf('month');
-            saveAllToLocal(); renderCalendar(); updateUI(); showToast('已存入本地金庫！💾', '✅');
+            };
+            
+            closeModal(); selectedDate = newDate; displayMonth = dayjs(newDate).startOf('month'); renderCalendar();
+            transactions.push(newTx); saveAllToLocal(); updateUI(); showToast('已存入您的本地金庫！💾', '✅');
         }
 
         function deleteTransaction(id) {
-            showDialog('刪除確認', '確定要刪掉嗎？', 'confirm', () => {
-                transactions = transactions.filter(t => t.id !== id);
-                saveAllToLocal(); updateUI(); showToast('紀錄已銷毀！', '✅');
+            showDialog('刪除確認', '這筆紀錄真的要刪掉嗎？這將無法復原喔！', 'confirm', () => {
+                transactions = transactions.filter(t => t.id !== id); saveAllToLocal(); updateUI(); showToast('紀錄已銷毀！🗑️', '✅');
             });
         }
 
+        // ==========================================
+        // 📊 主要介面渲染 (UI 動態切換貨幣符號)
+        // ==========================================
         function updateUI() {
-            let monthInc = 0, monthExp = 0;
-            const listContainer = document.getElementById('transaction-list');
-            if(!listContainer) return;
+            let monthIncomeBase = 0, monthExpenseBase = 0;
+            const listContainer = document.getElementById('transaction-list'); if (!listContainer) return;
             const emptyState = document.getElementById('empty-state'); listContainer.innerHTML = '';
-            const mStart = displayMonth.startOf('month'), mEnd = displayMonth.endOf('month');
+
+            const viewMonthStart = displayMonth.startOf('month'), viewMonthEnd = displayMonth.endOf('month');
             const thisMonthTx = [];
             
             transactions.forEach(tx => {
                 const d = dayjs(tx.date);
-                if ((d.isAfter(mStart) || d.isSame(mStart, 'day')) && (d.isBefore(mEnd) || d.isSame(mEnd, 'day'))) {
+                if ((d.isAfter(viewMonthStart) || d.isSame(viewMonthStart, 'day')) && (d.isBefore(viewMonthEnd) || d.isSame(viewMonthEnd, 'day'))) {
                     thisMonthTx.push(tx);
-                    if (tx.type === 'income') monthInc += tx.baseAmount; else monthExp += tx.baseAmount;
+                    if (tx.type === 'income') monthIncomeBase += tx.baseAmount; else monthExpenseBase += tx.baseAmount;
                 }
             });
 
-            document.getElementById('header-month-label').innerText = `${displayMonth.format('M月')}結餘 💰`;
-            document.getElementById('total-balance').innerText = Math.round(monthInc - monthExp).toLocaleString();
-            document.getElementById('total-income').innerText = Math.round(monthInc).toLocaleString();
-            document.getElementById('total-expense').innerText = Math.round(monthExp).toLocaleString();
+            // 🌟 更新 UI 上的貨幣符號
+            const baseSymbol = supportedCurrencies[userBaseCurrency].symbol;
+            document.getElementById('header-currency-symbol').innerText = baseSymbol;
+            document.getElementById('budget-currency-symbol').innerText = baseSymbol;
+            
+            const overviewTitle = document.getElementById('overview-chart-title');
+            if(overviewTitle) overviewTitle.innerText = `總收支對比 (${supportedCurrencies[userBaseCurrency].code})`;
 
-            const aiEl = document.getElementById('ai-suggestion-text');
-            if(monthlyBudget > 0 && displayMonth.isSame(dayjs(), 'month')) {
-                const rem = monthlyBudget - monthExp;
-                if(rem < 0) aiEl.innerHTML = `🚨 超出預算 <span class="text-[#EF476F]">HK$${Math.abs(Math.round(rem)).toLocaleString()}</span>！`;
-                else aiEl.innerHTML = `👍 預算結餘 HK$${Math.round(rem).toLocaleString()}，繼續保持！`;
-            } else { aiEl.innerHTML = thisMonthTx.length === 0 ? "目前沒有紀錄喔！" : "持續紀錄中，了解金流是理財第一步。"; }
+            document.getElementById('header-month-label').innerText = `${displayMonth.format('M月')}結餘 💰`;
+            document.getElementById('total-balance').innerText = Math.round(monthIncomeBase - monthExpenseBase).toLocaleString();
+            document.getElementById('total-income').innerText = Math.round(monthIncomeBase).toLocaleString();
+            document.getElementById('total-expense').innerText = Math.round(monthExpenseBase).toLocaleString();
+
+            generateAISuggestion(monthIncomeBase, monthExpenseBase, thisMonthTx);
 
             const dayTx = transactions.filter(tx => tx.date === selectedDate);
-            if (dayTx.length === 0) { emptyState.style.display = 'block'; } 
-            else {
+            if (dayTx.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
                 emptyState.style.display = 'none';
-                const allCat = [...categories.expense, ...categories.income]; dayTx.sort((a, b) => b.amount - a.amount);
-                const dayCard = document.createElement('div'); dayCard.className = 'bg-white rounded-[30px] p-4 cartoon-border cartoon-shadow-sm mb-4 space-y-3';
+                const allCategories = [...categories.expense, ...categories.income];
+                dayTx.sort((a, b) => b.amount - a.amount);
+
+                const dayCard = document.createElement('div');
+                dayCard.className = 'bg-white rounded-[30px] p-4 cartoon-border cartoon-shadow-sm mb-4 space-y-3';
+
                 dayTx.forEach(tx => {
-                    const catInfo = allCat.find(c => c.id === tx.category) || allCat[5];
-                    const isInc = tx.type === 'income'; const info = supportedCurrencies[tx.currency || 'hkd'];
-                    const fmtAmt = tx.amount.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: info.decimals});
-                    const conv = (tx.currency !== BASE_CURRENCY) ? `<div class="text-[10px] text-gray-400 font-bold -mt-1 text-right">≈ HK$${Math.round(tx.baseAmount).toLocaleString()}</div>` : '';
-                    dayCard.innerHTML += `
-                        <div class="bg-[#FAFAFA] p-3 rounded-2xl flex items-center gap-3 border-2 border-gray-100 relative group">
-                            <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center cartoon-border ${catInfo.bg} ${catInfo.text}"><i class="ph-fill ${catInfo.icon} text-2xl"></i></div>
-                            <div class="flex-1 overflow-hidden"><div class="font-black text-gray-800">${catInfo.name}</div><div class="text-xs text-gray-400 truncate">${tx.note||'無備註'}</div></div>
-                            <div class="text-right shrink-0"><div class="font-black text-lg ${isInc?'text-[#06D6A0]':'text-gray-800'}">${isInc?'+':'-'}${info.symbol}${fmtAmt}</div>${conv}</div>
-                            <button onclick="deleteTransaction('${tx.id}')" class="absolute -right-2 -top-2 bg-[#EF476F] text-white w-6 h-6 rounded-full cartoon-border flex items-center justify-center active-press"><i class="ph-bold ph-minus text-xs"></i></button>
-                        </div>`;
+                    const catInfo = allCategories.find(c => c.id === tx.category) || allCategories[5];
+                    const isIncome = tx.type === 'income';
+                    const amountClass = isIncome ? 'text-[#06D6A0]' : 'text-gray-800';
+                    const sign = isIncome ? '+' : '-';
+                    const currInfo = supportedCurrencies[tx.currency || 'hkd'];
+                    
+                    // 🌟 如果該筆帳目貨幣與使用者的預設貨幣不同，才顯示換算結果
+                    const conversionText = (tx.currency !== userBaseCurrency) 
+                        ? `<div class="text-[10px] text-gray-400 font-bold -mt-1 text-right tracking-tighter">≈ ${baseSymbol}${Math.round(tx.baseAmount).toLocaleString()}</div>` : '';
+
+                    const formattedAmount = tx.amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: currInfo.decimals });
+
+                    const item = document.createElement('div');
+                    item.className = 'bg-[#FAFAFA] p-3 rounded-2xl flex items-center gap-3 border-2 border-gray-100 relative group';
+                    item.innerHTML = `
+                        <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center cartoon-border ${catInfo.bg} ${catInfo.text}"><i class="ph-fill ${catInfo.icon} text-2xl"></i></div>
+                        <div class="flex-1 overflow-hidden">
+                            <div class="font-black text-gray-800 flex items-center gap-1">${catInfo.name} ${tx.currency !== userBaseCurrency ? `<span class="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[9px]">${currInfo.code}</span>` : ''}</div>
+                            <div class="text-xs font-bold text-gray-400 mt-0.5 truncate">${tx.note ? tx.note : '無備註'}</div>
+                        </div>
+                        <div class="text-right shrink-0"><div class="font-black text-lg ${amountClass}">${sign}${currInfo.symbol}${formattedAmount}</div>${conversionText}</div>
+                        <button onclick="deleteTransaction('${tx.id}')" class="absolute -right-2 -top-2 bg-[#EF476F] text-white w-6 h-6 rounded-full cartoon-border flex items-center justify-center active-press"><i class="ph-bold ph-minus text-xs"></i></button>
+                    `;
+                    dayCard.appendChild(item);
                 });
                 listContainer.appendChild(dayCard);
             }
@@ -866,98 +1031,116 @@
         }
 
         // ==========================================
-        // 預算與通知
-        // ==========================================
-        function openBudgetModal() { document.getElementById('budget-modal').classList.remove('hidden'); document.getElementById('budget-input').focus(); }
-        function closeBudgetModal() { document.getElementById('budget-modal').classList.add('hidden'); }
-        function saveBudget() {
-            const v = parseFloat(document.getElementById('budget-input').value); monthlyBudget = (isNaN(v) || v<=0) ? 0 : v;
-            closeBudgetModal(); saveAllToLocal(); updateUI(); showToast('預算設定完成！', '✅');
-        }
-
-        function addCreditCard() {
-            const n = document.getElementById('card-name-input').value.trim(), d = parseInt(document.getElementById('card-date-input').value);
-            if(!n || isNaN(d) || d<1 || d>31) return showToast('請填寫正確資料', '❌');
-            creditCards.push({id: Date.now().toString(), name: n, dueDate: d, lastPaidMonth: ''});
-            saveAllToLocal(); document.getElementById('card-name-input').value=''; document.getElementById('card-date-input').value='';
-            renderCardList(); checkNotifications(); showToast('追蹤已加入！', '✅');
-        }
-        function markCardPaid(id) {
-            const c = creditCards.find(x => x.id === id); if(c) { c.lastPaidMonth = dayjs().format('YYYY-MM'); saveAllToLocal(); renderCardList(); checkNotifications(); }
-        }
-        function deleteCard(id) {
-            if(confirm('確定要取消嗎？')) { creditCards = creditCards.filter(c => c.id !== id); saveAllToLocal(); renderCardList(); checkNotifications(); }
-        }
-        function renderCardList() {
-            const container = document.getElementById('card-list-container'); container.innerHTML = '';
-            if(creditCards.length === 0) return container.innerHTML = `<div class="text-center text-gray-400 text-xs py-2">目前沒有設定任何信用卡</div>`;
-            creditCards.forEach(c => {
-                const isPaid = c.lastPaidMonth === dayjs().format('YYYY-MM');
-                const btn = isPaid ? `<span class="text-[10px] font-black text-[#06D6A0] bg-[#06D6A0]/10 px-2 py-1 rounded-lg">✅ 本月已繳</span>` : `<button onclick="markCardPaid('${c.id}')" class="text-xs font-black bg-[#06D6A0] text-gray-900 px-3 py-1 rounded-lg cartoon-border border-2">標記已繳</button>`;
-                container.innerHTML += `<div class="bg-white p-3 rounded-2xl cartoon-border border-2 flex justify-between items-center mb-2"><div><div class="font-black text-sm">${c.name}</div><div class="text-[10px] text-gray-500">每月 ${c.dueDate} 號結帳</div></div><div class="flex items-center gap-2">${btn}<button onclick="deleteCard('${c.id}')" class="text-gray-400 hover:text-red-500 ml-1"><i class="ph-bold ph-trash"></i></button></div></div>`;
-            });
-        }
-
-        function checkNotifications() {
-            const list = document.getElementById('notif-list'); list.innerHTML = ''; let hasNew = false;
-            if(!transactions.some(t => t.date === dayjs().format('YYYY-MM-DD'))) { list.innerHTML += `<div class="bg-gray-50 p-3 rounded-xl cartoon-border border-2 mb-2"><div class="font-black text-sm">🔔 管家提醒：今天還沒記帳喔！</div></div>`; hasNew = true; }
-            creditCards.forEach(c => {
-                if(c.lastPaidMonth === dayjs().format('YYYY-MM')) return;
-                const d = dayjs().date(c.dueDate).startOf('day'), diff = d.diff(dayjs().startOf('day'), 'day');
-                if(diff <= 7) { list.innerHTML += `<div class="bg-red-50 p-3 rounded-xl cartoon-border border-2 mb-2"><div class="font-black text-sm text-red-600">🚨 ${c.name} 即將/已結帳！</div></div>`; hasNew = true; }
-            });
-            document.getElementById('notif-badge').className = hasNew ? "absolute -top-1 -right-1 w-3 h-3 bg-[#EF476F] rounded-full border-2 border-white" : "hidden";
-        }
-        function openNotifModal() { document.getElementById('notif-modal').classList.remove('hidden'); document.getElementById('notif-badge').classList.add('hidden'); }
-        function closeNotifModal() { document.getElementById('notif-modal').classList.add('hidden'); }
-
-        // ==========================================
-        // 圖表切換邏輯
+        // 📊 圖表系統 (Chart.js 完美還原版)
         // ==========================================
         function switchTab(tab) {
-            ['list', 'chart', 'currency'].forEach(t => {
-                document.getElementById(`tab-btn-${t}`).className = t === tab ? 'flex-1 py-2 text-xs font-black bg-[#118AB2] text-white rounded-xl cartoon-border cartoon-shadow-sm active-press' : 'flex-1 py-2 text-xs font-black bg-white text-gray-400 border-2 border-gray-200 rounded-xl transition-all';
-                document.getElementById(`view-${t}`).className = t === tab ? (t==='list'?'block flex-1 flex flex-col':'p-4 pt-2') : 'hidden';
-            });
-            if (tab === 'chart') renderChart();
-        }
-        function setChartPeriod(p) { currentChartPeriod = p; renderChart(); }
-        function renderChart() {
-            // (因長度關係，此處省略詳細 ChartJS 生成，保留核心架構讓畫面不出錯，主要修復登入與資料邏輯)
-            ['weekly', 'monthly', 'yearly'].forEach(p => {
-                document.getElementById(`filter-${p}`).className = p === currentChartPeriod ? 'px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0' : 'px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0';
+            const tabs = ['list', 'chart', 'currency'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`), view = document.getElementById(`view-${t}`);
+                if (t === tab) { btn.className = 'flex-1 py-2 text-xs font-black bg-[#118AB2] text-white rounded-xl cartoon-border cartoon-shadow-sm active-press'; view.classList.remove('hidden'); if (t === 'chart') renderChart(); } 
+                else { btn.className = 'flex-1 py-2 text-xs font-black bg-white text-gray-400 border-2 border-gray-200 rounded-xl transition-all'; view.classList.add('hidden'); }
             });
         }
 
+        function setChartPeriod(period) {
+            currentChartPeriod = period;
+            ['weekly', 'monthly', 'yearly'].forEach(p => {
+                document.getElementById(`filter-${p}`).className = (p === period) ? 'px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0' : 'px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0';
+            });
+            renderChart();
+        }
+
+        function createDoughnutChart(ctxId, emptyStateId, dataArray, type) {
+            const ctx = document.getElementById(ctxId); const emptyState = document.getElementById(emptyStateId);
+            if (!ctx) return null;
+            if (dataArray.length === 0) { ctx.style.display = 'none'; emptyState.classList.remove('hidden'); return null; } 
+            else { ctx.style.display = 'block'; emptyState.classList.add('hidden'); }
+            const catTotals = {}; dataArray.forEach(tx => { catTotals[tx.category] = (catTotals[tx.category] || 0) + tx.baseAmount; });
+            const labels = [], data = [], bgColors = [];
+            categories[type].forEach(cat => { if (catTotals[cat.id]) { labels.push(cat.name); data.push(catTotals[cat.id]); bgColors.push(cat.hex); } });
+            return new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 3, borderColor: '#1e293b' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '65%' } });
+        }
+
+        function renderChart() {
+            const now = dayjs(); let startDate, endDate, dateLabels = []; 
+            if (currentChartPeriod === 'weekly') { startDate = now.startOf('week'); endDate = now.endOf('week'); for(let i=0; i<7; i++) dateLabels.push(startDate.add(i, 'day').format('MM/DD')); } 
+            else if (currentChartPeriod === 'monthly') { startDate = now.startOf('month'); endDate = now.endOf('month'); for(let i=1; i<=now.daysInMonth(); i++) dateLabels.push(startDate.date(i).format('DD')); } 
+            else { startDate = now.startOf('year'); endDate = now.endOf('year'); for(let i=0; i<12; i++) dateLabels.push(startDate.month(i).format('MM月')); }
+
+            const filteredTx = transactions.filter(t => { const d = dayjs(t.date); return (d.isAfter(startDate) || d.isSame(startDate, 'day')) && (d.isBefore(endDate) || d.isSame(endDate, 'day')); });
+            let totalPeriodIncome = 0; let totalPeriodExpense = 0;
+            filteredTx.forEach(tx => { if (tx.type === 'income') totalPeriodIncome += tx.baseAmount; else totalPeriodExpense += tx.baseAmount; });
+
+            if (overviewChartInstance) overviewChartInstance.destroy();
+            const overviewCtx = document.getElementById('overviewChart'); const overviewEmpty = document.getElementById('overview-empty-state');
+            
+            if (overviewCtx) {
+                if (totalPeriodIncome === 0 && totalPeriodExpense === 0) { overviewCtx.style.display = 'none'; overviewEmpty.classList.remove('hidden'); overviewEmpty.classList.add('block'); } 
+                else {
+                    overviewCtx.style.display = 'block'; overviewEmpty.classList.remove('block'); overviewEmpty.classList.add('hidden');
+                    overviewChartInstance = new Chart(overviewCtx, { type: 'pie', data: { labels: ['總收入', '總支出'], datasets: [{ data: [totalPeriodIncome, totalPeriodExpense], backgroundColor: ['#06D6A0', '#FFD166'], borderWidth: 3, borderColor: '#1e293b' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Nunito', weight: 'bold' } } } } } });
+                }
+            }
+
+            if (expenseChartInstance) expenseChartInstance.destroy(); if (incomeChartInstance) incomeChartInstance.destroy();
+            expenseChartInstance = createDoughnutChart('expenseChart', 'expense-empty-state', filteredTx.filter(t => t.type === 'expense'), 'expense');
+            incomeChartInstance = createDoughnutChart('incomeChart', 'income-empty-state', filteredTx.filter(t => t.type === 'income'), 'income');
+
+            let tInc = Array(dateLabels.length).fill(0), tExp = Array(dateLabels.length).fill(0);
+            filteredTx.forEach(tx => {
+                const d = dayjs(tx.date); let labelStr = (currentChartPeriod === 'yearly') ? d.format('MM月') : (currentChartPeriod === 'monthly' ? d.format('DD') : d.format('MM/DD'));
+                const idx = dateLabels.indexOf(labelStr); if (idx !== -1) { if (tx.type === 'income') tInc[idx] += tx.baseAmount; else tExp[idx] += tx.baseAmount; }
+            });
+
+            const trendCtx = document.getElementById('trendChart');
+            if (trendCtx) {
+                if (trendChartInstance) trendChartInstance.destroy();
+                
+                // 🌟 圖表標籤自動更新為使用者的設定貨幣
+                const baseCode = supportedCurrencies[userBaseCurrency].code;
+                trendChartInstance = new Chart(trendCtx, {
+                    type: 'bar',
+                    data: { labels: dateLabels, datasets: [ { label: `支出 (${baseCode})`, data: tExp, backgroundColor: '#FFD166', borderColor: '#1e293b', borderWidth: 2, borderRadius: 4 }, { label: `收入 (${baseCode})`, data: tInc, backgroundColor: '#06D6A0', borderColor: '#1e293b', borderWidth: 2, borderRadius: 4 } ] },
+                    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top', labels: { font: {family: 'Nunito', weight: 'bold'} } } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: {family: 'Nunito', weight: 'bold'} } }, y: { stacked: true, border: { display: false }, ticks: { maxTicksLimit: 5, font: {family: 'Nunito', weight: 'bold'} } } } }
+                });
+            }
+        }
+
         // ==========================================
-        // 啟動器
+        // 🚀 初始化應用
         // ==========================================
         async function init() {
-            initCurrencySelects(); await fetchExchangeRates(); renderCalendar();
-            const lastUser = localStorage.getItem('ms_v1_last_user');
-            if (lastUser) loginSuccess(lastUser);
+            initCurrencySelects(); 
+            await fetchExchangeRates();
+            renderCalendar();
+
+            const autoUser = localStorage.getItem('money_saver_logged_in_user');
+            if (autoUser) { loginSuccess(autoUser); } 
             else { viewAuth.classList.remove('hidden'); viewMain.classList.add('hidden'); }
 
-            // 下拉刷新動畫
-            const scrollContainer = document.getElementById('ptr-scroll-container');
-            const ptrIndicator = document.getElementById('ptr-indicator');
+            const scrollContainer = document.getElementById('ptr-scroll-container'), ptrIndicator = document.getElementById('ptr-indicator');
             let startY = 0; let pulling = false;
             scrollContainer.addEventListener('touchstart', e => { if(scrollContainer.scrollTop === 0) { startY = e.touches[0].clientY; pulling = true; } }, {passive: true});
-            scrollContainer.addEventListener('touchmove', e => {
-                if(!pulling) return; const dist = e.touches[0].clientY - startY;
-                if(dist > 0 && scrollContainer.scrollTop === 0) {
-                    const h = Math.min(dist * 0.4, 50); ptrIndicator.style.height = `${h}px`; ptrIndicator.style.opacity = h/50;
-                }
-            }, {passive: true});
-            scrollContainer.addEventListener('touchend', async () => {
-                if(!pulling) return; pulling = false;
-                if(parseInt(ptrIndicator.style.height) > 40) {
-                    ptrIndicator.style.height = '40px'; document.getElementById('ptr-text').innerText = '載入中...';
-                    await fetchExchangeRates(); updateUI();
-                    setTimeout(() => { ptrIndicator.style.height='0'; ptrIndicator.style.opacity='0'; showToast('刷新成功'); document.getElementById('ptr-text').innerText = '下拉刷新...'; }, 500);
-                } else { ptrIndicator.style.height='0'; ptrIndicator.style.opacity='0'; }
-            }, {passive: true});
+            scrollContainer.addEventListener('touchmove', e => { if(!pulling) return; const dist = e.touches[0].clientY - startY; if(dist > 0 && scrollContainer.scrollTop === 0) { const h = Math.min(dist * 0.4, 50); ptrIndicator.style.height = `${h}px`; ptrIndicator.style.opacity = h/50; } }, {passive: true});
+            scrollContainer.addEventListener('touchend', async () => { if(!pulling) return; pulling = false; if(parseInt(ptrIndicator.style.height) > 40) { ptrIndicator.style.height = '40px'; document.getElementById('ptr-text').innerText = '載入中...'; await fetchExchangeRates(); updateUI(); setTimeout(() => { ptrIndicator.style.height='0'; ptrIndicator.style.opacity='0'; showToast('刷新成功'); document.getElementById('ptr-text').innerText = '下拉重新整理數據...'; }, 500); } else { ptrIndicator.style.height='0'; ptrIndicator.style.opacity='0'; } }, {passive: true});
         }
+
+        // 綁定全域函數 (確保 HTML 調用不會出錯)
+        window.openWeatherModal = openWeatherModal; window.switchTab = switchTab; window.changeMonth = changeMonth;
+        window.setChartPeriod = setChartPeriod; window.calculateExchange = calculateExchange; window.openModal = openModal;
+        window.closeModal = closeModal; window.setType = setType; window.saveTransaction = saveTransaction;
+        window.useCurrentLocation = useCurrentLocation; window.searchCityWeather = searchCityWeather; 
+        window.closeWeatherModal = closeWeatherModal; window.closeDialog = closeDialog; window.deleteTransaction = deleteTransaction;
+        window.openNotifModal = openNotifModal; window.closeNotifModal = closeNotifModal; window.requestNotificationPermission = requestNotificationPermission;
+        window.addCreditCard = addCreditCard; window.markCardPaid = markCardPaid; window.deleteCard = deleteCard;
+        window.openBudgetModal = openBudgetModal; window.closeBudgetModal = closeBudgetModal; window.saveBudget = saveBudget;
+        
+        window.openSettingsModal = openSettingsModal; window.closeSettingsModal = closeSettingsModal;
+        window.exportBackup = exportBackup; window.importBackup = importBackup;
+        window.handleBgUpload = handleBgUpload; window.removeBg = removeBg;
+        
+        window.handleLogin = handleLogin; window.handleRegister = handleRegister; window.handleGuestLogin = handleGuestLogin; window.handleLogout = handleLogout;
+        window.saveBaseCurrency = saveBaseCurrency; // 🌟 新增綁定：主要貨幣儲存功能
 
         window.onload = init;
     </script>
