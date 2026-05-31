@@ -1,0 +1,1439 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>開支小管家</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- 引入 Chart.js & Day.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <!-- 引入字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #FFF5E1; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .cartoon-border { border: 3px solid #1e293b; }
+        .cartoon-shadow { box-shadow: 4px 4px 0px 0px #1e293b; }
+        .cartoon-shadow-sm { box-shadow: 2px 2px 0px 0px #1e293b; }
+        .active-press { transition: all 0.1s ease; }
+        .active-press:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px 0px #1e293b; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .slide-up { animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        .speech-bubble::after {
+            content: ''; position: absolute; left: 20px; bottom: -10px; border-width: 10px 10px 0; border-style: solid; border-color: #ffffff transparent transparent transparent; z-index: 10;
+        }
+        .speech-bubble::before {
+            content: ''; position: absolute; left: 17px; bottom: -14px; border-width: 13px 13px 0; border-style: solid; border-color: #1e293b transparent transparent transparent; z-index: 9;
+        }
+        #ptr-indicator { transition: height 0.2s ease, opacity 0.2s ease; }
+    </style>
+</head>
+<body class="flex justify-center h-[100dvh] overflow-hidden">
+
+    <!-- Toast 通知容器 -->
+    <div id="toast-container" class="absolute top-4 left-1/2 -translate-x-1/2 z-[200] flex flex-col gap-2 w-11/12 max-w-[350px]"></div>
+
+    <div id="app-container" class="w-full max-w-md bg-[#FAFAFA] h-full flex flex-col relative shadow-2xl cartoon-border sm:my-2 sm:h-[96vh] sm:rounded-[40px] overflow-hidden bg-cover bg-center transition-all duration-300">
+        <!-- 背景半透明遮罩，確保文字與卡片可讀 -->
+        <div id="app-bg-overlay" class="absolute inset-0 bg-white/60 pointer-events-none z-0 hidden backdrop-blur-[2px]"></div>
+        
+        <!-- ========================================== -->
+        <!-- 登入畫面 (Auth View) -->
+        <!-- ========================================== -->
+        <div id="view-auth" class="absolute inset-0 bg-[#FFB5A7] z-[100] flex flex-col items-center justify-center p-6 pb-20">
+            <div class="text-7xl mb-2">🤖</div>
+            <h1 class="text-3xl font-black text-gray-900 mb-8">開支小管家</h1>
+            
+            <div class="bg-white w-full rounded-[30px] p-6 cartoon-border cartoon-shadow">
+                <h2 id="auth-title" class="text-xl font-black text-gray-800 mb-6 text-center">管家為您服務！</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 mb-1 pl-1">電子信箱</label>
+                        <input type="email" id="auth-email" placeholder="輸入 Email" class="w-full bg-gray-50 cartoon-border rounded-xl py-3 px-4 text-base font-bold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#118AB2]/50 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-black text-gray-500 mb-1 pl-1">密碼 (至少 6 碼)</label>
+                        <input type="password" id="auth-password" placeholder="輸入密碼" class="w-full bg-gray-50 cartoon-border rounded-xl py-3 px-4 text-base font-bold focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#118AB2]/50 transition-all">
+                    </div>
+                    
+                    <div id="auth-error" class="hidden text-xs font-bold text-[#EF476F] bg-[#EF476F]/10 p-2 rounded-lg text-center cartoon-border border-2"></div>
+                    
+                    <button id="btn-login" class="w-full bg-[#06D6A0] text-gray-900 font-black text-lg py-4 rounded-xl cartoon-border cartoon-shadow-sm active-press mt-2">
+                        登入
+                    </button>
+                    <button id="btn-register" class="hidden w-full bg-[#118AB2] text-white font-black text-lg py-4 rounded-xl cartoon-border cartoon-shadow-sm active-press mt-2">
+                        註冊並登入
+                    </button>
+                </div>
+
+                <div class="mt-6 text-center">
+                    <button id="auth-toggle-mode" class="text-sm font-bold text-gray-500 hover:text-gray-800 transition-colors">
+                        還沒有帳號？<span class="text-[#118AB2] underline underline-offset-2">請管家建檔</span>
+                    </button>
+                </div>
+            </div>
+            
+            <button id="btn-anonymous" class="mt-6 text-xs font-bold text-gray-800/60 hover:text-gray-900 bg-white/30 px-4 py-2 rounded-full cartoon-border border-2">
+                先免登入體驗看看 👀
+            </button>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 主應用程式畫面 (Main App View) -->
+        <!-- ========================================== -->
+        <div id="view-main" class="hidden w-full h-full flex flex-col">
+            <!-- 頂部 Header -->
+            <header class="bg-[#FFB5A7] text-gray-900 p-5 pt-8 rounded-b-[40px] cartoon-border cartoon-shadow mb-2 z-10 relative shrink-0">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="bg-white/80 px-3 py-1 rounded-full cartoon-border border-2 text-xs font-black text-gray-800 flex items-center gap-1 shadow-sm relative z-10">
+                        <i class="ph-fill ph-user-circle"></i> <span id="user-email-display" class="max-w-[120px] truncate">載入中...</span>
+                    </div>
+                    
+                    <div class="flex gap-2 relative z-10">
+                        <button onclick="openBgModal()" class="w-8 h-8 bg-white rounded-full cartoon-border border-2 flex items-center justify-center text-gray-800 active-press hover:bg-gray-100 shadow-sm">
+                            <i class="ph-bold ph-image"></i>
+                        </button>
+                        <button onclick="openNotifModal()" class="relative w-8 h-8 bg-white rounded-full cartoon-border border-2 flex items-center justify-center text-gray-800 active-press hover:bg-gray-100 shadow-sm">
+                            <i class="ph-bold ph-bell"></i>
+                            <div id="notif-badge" class="absolute -top-1 -right-1 w-3 h-3 bg-[#EF476F] rounded-full border-2 border-white hidden"></div>
+                        </button>
+                        <button id="btn-logout" class="w-8 h-8 bg-white rounded-full cartoon-border border-2 flex items-center justify-center text-gray-800 active-press hover:bg-gray-100 shadow-sm">
+                            <i class="ph-bold ph-sign-out"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div onclick="openWeatherModal()" class="bg-white/90 rounded-2xl p-3 flex items-center gap-3 cartoon-border cartoon-shadow-sm mb-5 cursor-pointer active-press group relative z-10">
+                    <div class="text-4xl" id="weather-icon">⏳</div>
+                    <div class="leading-tight flex-1">
+                        <div id="weather-text" class="font-black text-gray-800 text-sm">管家觀測天氣中...</div>
+                        <div id="weather-subtext" class="text-xs font-bold text-gray-500 mt-0.5">請稍候</div>
+                    </div>
+                    <div class="text-gray-400 group-hover:text-gray-800 transition-colors">
+                        <i class="ph-bold ph-map-pin text-xl"></i>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-end mb-4 relative">
+                    <div>
+                        <div class="text-gray-800 font-black text-sm mb-1 flex items-center gap-1" id="header-month-label">
+                            連線金庫中 <i class="ph-bold ph-spinner animate-spin"></i>
+                        </div>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-2xl font-black">HK$</span>
+                            <span class="text-4xl font-black tracking-tight" id="total-balance">0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <div class="flex-1 bg-[#06D6A0] rounded-xl p-2 cartoon-border cartoon-shadow-sm flex items-center gap-2">
+                        <div class="bg-white/30 rounded-full p-1"><i class="ph-bold ph-arrow-down-left text-white"></i></div>
+                        <div>
+                            <div class="text-[10px] font-black text-gray-800">收入(換算)</div>
+                            <div class="font-black text-gray-900 leading-none">$<span id="total-income">0</span></div>
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-[#FFD166] rounded-xl p-2 cartoon-border cartoon-shadow-sm flex items-center gap-2">
+                        <div class="bg-white/40 rounded-full p-1"><i class="ph-bold ph-arrow-up-right text-gray-800"></i></div>
+                        <div>
+                            <div class="text-[10px] font-black text-gray-800">支出(換算)</div>
+                            <div class="font-black text-gray-900 leading-none">$<span id="total-expense">0</span></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 切換分頁按鈕 -->
+            <div class="flex px-4 gap-2 shrink-0 mb-2 mt-2 relative z-10">
+                <button id="tab-btn-list" onclick="switchTab('list')" class="flex-1 py-2 text-xs font-black bg-[#118AB2] text-white rounded-xl cartoon-border cartoon-shadow-sm active-press">收支日曆</button>
+                <button id="tab-btn-chart" onclick="switchTab('chart')" class="flex-1 py-2 text-xs font-black bg-white text-gray-400 border-2 border-gray-200 rounded-xl transition-all">管家報表</button>
+                <button id="tab-btn-currency" onclick="switchTab('currency')" class="flex-1 py-2 text-xs font-black bg-white text-gray-400 border-2 border-gray-200 rounded-xl transition-all">匯率轉換</button>
+            </div>
+
+            <!-- 下拉更新的核心容器 -->
+            <main id="ptr-scroll-container" class="flex-1 overflow-y-auto no-scrollbar pb-24 relative flex flex-col z-10">
+                
+                <!-- 手動下拉更新的視覺提示條 -->
+                <div id="ptr-indicator" class="h-0 opacity-0 flex items-center justify-center bg-amber-50 border-b-2 border-dashed border-slate-700 text-xs font-black text-slate-700 shrink-0 gap-2 overflow-hidden">
+                    <i id="ptr-icon" class="ph-bold ph-arrow-down text-base animate-bounce"></i>
+                    <span id="ptr-text">下拉手動同步金庫...</span>
+                </div>
+
+                <!-- 列表視圖 -->
+                <div id="view-list" class="block flex-1 flex flex-col">
+                    <!-- AI 理財小管家區塊 -->
+                    <div class="mx-4 mt-2 mb-2">
+                        <div class="relative speech-bubble bg-white rounded-2xl p-3 cartoon-border shadow-sm mb-2">
+                            <div class="flex items-start gap-2">
+                                <div class="text-lg">🤖</div>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-center mb-0.5">
+                                        <h4 class="text-xs font-black text-[#118AB2]">管家分析</h4>
+                                        <button onclick="openBudgetModal()" class="text-[10px] bg-white text-[#118AB2] px-2 py-0.5 rounded-lg cartoon-border border-2 shadow-sm active-press hover:bg-gray-50">設定預算 🎯</button>
+                                    </div>
+                                    <p id="ai-suggestion-text" class="text-xs font-bold text-gray-600 leading-relaxed">正在分析您的財務狀況...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 日曆條 -->
+                    <div class="bg-white mx-4 rounded-3xl p-3 cartoon-border cartoon-shadow-sm shrink-0">
+                        <div class="flex justify-between items-center mb-3 px-2">
+                            <button onclick="changeMonth(-1)" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 active-press"><i class="ph-bold ph-caret-left"></i></button>
+                            <div id="calendar-month-display" class="font-black text-gray-800 tracking-wide text-sm">載入中...</div>
+                            <button onclick="changeMonth(1)" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 active-press"><i class="ph-bold ph-caret-right"></i></button>
+                        </div>
+                        <div id="calendar-strip" class="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth pb-1 px-1"></div>
+                    </div>
+
+                    <div class="flex-1 p-4 relative">
+                        <div class="text-center text-gray-400 mt-4" id="empty-state">
+                            <div class="text-6xl mb-2">☕</div>
+                            <p class="font-bold">這天沒有紀錄喔！<br>有任何花費隨時告訴管家✏️</p>
+                        </div>
+                        <div id="transaction-list"></div>
+                    </div>
+                </div>
+
+                <!-- 圖表視圖 -->
+                <div id="view-chart" class="hidden p-4 pt-2">
+                    <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 px-1">
+                        <button onclick="setChartPeriod('weekly')" id="filter-weekly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0">本週</button>
+                        <button onclick="setChartPeriod('monthly')" id="filter-monthly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0">本月</button>
+                        <button onclick="setChartPeriod('yearly')" id="filter-yearly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0">今年</button>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="bg-white p-4 rounded-3xl cartoon-border cartoon-shadow-sm flex flex-col items-center">
+                            <div class="text-sm font-black text-gray-800 mb-2">總收支對比 (HKD)</div>
+                            <div class="relative w-full aspect-square max-w-[180px]"><canvas id="overviewChart"></canvas></div>
+                            <div id="overview-empty-state" class="hidden text-center text-gray-400 mt-4 text-xs font-bold">這段時間沒有紀錄喔🤷‍♂️</div>
+                        </div>
+                    </div>
+
+                    <div id="trend-chart-container" class="mb-6">
+                        <div class="bg-white p-4 rounded-3xl cartoon-border cartoon-shadow-sm">
+                            <div class="relative w-full h-[180px]"><canvas id="trendChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-white p-4 rounded-3xl cartoon-border cartoon-shadow-sm flex flex-col items-center">
+                            <div class="text-xs font-black text-gray-500 mb-2 bg-gray-100 px-2 rounded-full">支出比例</div>
+                            <div class="relative w-full aspect-square max-w-[120px]"><canvas id="expenseChart"></canvas></div>
+                            <div id="expense-empty-state" class="hidden text-center text-gray-400 mt-4 text-xs font-bold">沒有花錢喔✌️</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-3xl cartoon-border cartoon-shadow-sm flex flex-col items-center">
+                            <div class="text-xs font-black text-gray-500 mb-2 bg-gray-100 px-2 rounded-full">收入比例</div>
+                            <div class="relative w-full aspect-square max-w-[120px]"><canvas id="incomeChart"></canvas></div>
+                            <div id="income-empty-state" class="hidden text-center text-gray-400 mt-4 text-xs font-bold">沒有進帳🥺</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 匯率計算機視圖 -->
+                <div id="view-currency" class="hidden p-4 pt-2">
+                    <div class="bg-white p-5 rounded-3xl cartoon-border cartoon-shadow-sm mb-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <div class="w-10 h-10 bg-[#FFD166] rounded-full cartoon-border flex items-center justify-center text-xl">💱</div>
+                            <h2 class="text-lg font-black text-gray-800">即時匯率計算機</h2>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="flex gap-2 items-center h-14">
+                                <div class="relative shrink-0 h-full">
+                                    <select id="calc-from-currency" onchange="calculateExchange()" class="h-full bg-gray-100 cartoon-border rounded-xl pl-3 pr-8 font-black text-base focus:outline-none appearance-none w-[110px]"></select>
+                                    <i class="ph-bold ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+                                </div>
+                                <input type="number" id="calc-amount" oninput="calculateExchange()" placeholder="輸入金額" value="100" class="flex-1 h-full bg-white cartoon-border rounded-xl px-4 font-black text-lg focus:outline-none min-w-0">
+                            </div>
+                            <div class="flex justify-center text-gray-400"><i class="ph-bold ph-arrow-down text-xl"></i></div>
+                            <div class="flex gap-2 items-center h-14">
+                                <div class="relative shrink-0 h-full">
+                                    <select id="calc-to-currency" onchange="calculateExchange()" class="h-full bg-[#118AB2] text-white cartoon-border rounded-xl pl-3 pr-8 font-black text-base focus:outline-none appearance-none w-[110px]"></select>
+                                    <i class="ph-bold ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"></i>
+                                </div>
+                                <div class="flex-1 h-full bg-gray-50 cartoon-border rounded-xl px-4 font-black text-2xl text-[#EF476F] flex items-center overflow-x-auto min-w-0">
+                                    <span id="calc-result">0.00</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right text-[10px] font-bold text-gray-400 mt-3 flex justify-between items-center">
+                            <span id="rate-status">🔄 匯率已更新</span>
+                            <span>* 以市場中間價為準</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-3xl cartoon-border cartoon-shadow-sm">
+                        <h2 class="text-sm font-black text-gray-500 mb-4 bg-gray-100 px-3 py-1 rounded-full inline-block">100 港幣換算參考</h2>
+                        <div class="grid grid-cols-2 gap-3" id="quick-rates-container"></div>
+                    </div>
+                </div>
+            </main>
+
+            <div class="absolute bottom-6 left-0 right-0 flex justify-center z-20">
+                <button onclick="openModal()" class="bg-[#EF476F] text-white w-16 h-16 rounded-full cartoon-border cartoon-shadow flex items-center justify-center text-4xl active-press">
+                    <i class="ph-bold ph-plus"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 彈出視窗們 (Modal) -->
+        <!-- 新增紀錄 Modal -->
+        <div id="add-modal" class="hidden absolute inset-0 z-[80] flex flex-col justify-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="closeModal()"></div>
+            <div class="bg-[#FFF9EA] w-full rounded-t-[40px] relative z-10 flex flex-col max-h-[90%] slide-up cartoon-border border-b-0">
+                <div class="flex justify-between items-center p-6 pb-2">
+                    <h3 class="text-2xl font-black text-gray-800">記一筆✏️</h3>
+                    <button onclick="closeModal()" class="w-8 h-8 bg-gray-200 rounded-full flex justify-center items-center cartoon-border active-press"><i class="ph-bold ph-x text-sm"></i></button>
+                </div>
+                <div class="p-6 overflow-y-auto no-scrollbar">
+                    <div class="flex gap-3 mb-6">
+                        <button id="type-expense" onclick="setType('expense')" class="flex-1 py-3 rounded-2xl text-sm font-black bg-[#FFD166] text-gray-900 cartoon-border cartoon-shadow-sm active-press">支出</button>
+                        <button id="type-income" onclick="setType('income')" class="flex-1 py-3 rounded-2xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200">收入</button>
+                    </div>
+                    
+                    <div class="mb-6 flex gap-2 relative h-16">
+                        <div class="relative shrink-0 h-full">
+                            <select id="currency-select" class="h-full bg-[#118AB2] text-white cartoon-border rounded-2xl pl-3 pr-8 font-black text-lg focus:outline-none appearance-none"></select>
+                            <i class="ph-bold ph-caret-down absolute right-3 top-1/2 -translate-y-1/2 text-white pointer-events-none"></i>
+                        </div>
+                        <input type="number" id="amount-input" placeholder="0" class="flex-1 h-full bg-white cartoon-border rounded-2xl px-4 text-2xl font-black text-gray-800 focus:outline-none focus:ring-4 focus:ring-[#FFB5A7]/50 min-w-0" inputmode="decimal">
+                    </div>
+
+                    <div class="mb-6"><div id="category-container" class="grid grid-cols-4 gap-3"></div></div>
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div><input type="date" id="date-input" class="w-full bg-white cartoon-border rounded-2xl py-3 px-4 text-base font-bold text-gray-800 focus:outline-none"></div>
+                        <div><input type="text" id="note-input" placeholder="寫點備註..." class="w-full bg-white cartoon-border rounded-2xl py-3 px-4 text-base font-bold text-gray-800 focus:outline-none"></div>
+                    </div>
+                    <button onclick="saveTransaction()" class="w-full bg-[#06D6A0] text-gray-900 font-black text-lg py-4 rounded-2xl cartoon-border cartoon-shadow active-press mb-4">存入管家金庫！☁️</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="weather-modal" class="hidden absolute inset-0 z-[90] flex items-center justify-center p-5">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="closeWeatherModal()"></div>
+            <div class="bg-white p-6 rounded-[30px] cartoon-border cartoon-shadow z-10 w-full max-w-[320px] slide-up">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-black text-gray-800">設定天氣地點 🌍</h3>
+                    <button onclick="closeWeatherModal()" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
+                </div>
+                <button onclick="useCurrentLocation()" class="w-full bg-[#118AB2] text-white py-3 rounded-2xl font-black cartoon-border cartoon-shadow-sm active-press mb-4 flex justify-center items-center gap-2">
+                    <i class="ph-bold ph-crosshair"></i> 使用當前定位
+                </button>
+                <div class="relative flex items-center py-2 mb-4">
+                    <div class="flex-grow border-t-2 border-dashed border-gray-200"></div>
+                    <span class="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold">或者手動輸入</span>
+                    <div class="flex-grow border-t-2 border-dashed border-gray-200"></div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="city-input" placeholder="例: 台北, Tokyo" class="flex-1 bg-gray-50 cartoon-border rounded-xl py-3 px-3 text-base font-bold focus:outline-none">
+                    <button onclick="searchCityWeather()" class="bg-[#FFD166] text-gray-900 px-4 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press">搜尋</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 管家通知中心與信用卡管理 Modal -->
+        <div id="notif-modal" class="hidden absolute inset-0 z-[95] flex items-center justify-center p-5">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="closeNotifModal()"></div>
+            <div class="bg-white p-6 rounded-[30px] cartoon-border cartoon-shadow z-10 w-full max-w-[340px] slide-up max-h-[90%] flex flex-col">
+                <div class="flex justify-between items-center mb-4 shrink-0">
+                    <h3 class="text-xl font-black text-gray-800 flex items-center gap-2">管家通知 🔔</h3>
+                    <button onclick="closeNotifModal()" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
+                </div>
+                
+                <div class="overflow-y-auto no-scrollbar flex-1 mb-4 flex flex-col">
+                    <!-- 系統日常提醒 -->
+                    <h4 class="text-xs font-black text-gray-400 mb-2 px-1">日常提醒</h4>
+                    <div id="notif-list" class="flex-col gap-2 mb-4">
+                        <!-- 通知會在這裡產生 -->
+                    </div>
+
+                    <!-- 信用卡還款管理區塊 -->
+                    <div class="border-t-2 border-dashed border-gray-200 my-2"></div>
+                    <h4 class="text-xs font-black text-gray-400 mt-2 mb-3 px-1">💳 信用卡還款追蹤</h4>
+                    
+                    <!-- 新增信用卡表單 -->
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="card-name-input" placeholder="卡片名稱 (例: 匯豐)" class="flex-1 bg-gray-50 cartoon-border border-2 rounded-xl px-3 py-2 text-base font-bold focus:outline-none">
+                        <input type="number" id="card-date-input" placeholder="結帳日" min="1" max="31" class="w-[70px] bg-gray-50 cartoon-border border-2 rounded-xl px-2 py-2 text-base font-bold focus:outline-none text-center">
+                        <button onclick="addCreditCard()" class="bg-[#118AB2] text-white px-3 rounded-xl cartoon-border border-2 active-press font-black text-lg">+</button>
+                    </div>
+
+                    <!-- 信用卡列表 -->
+                    <div id="card-list-container" class="space-y-2 pb-2">
+                        <!-- 信用卡清單產生在此 -->
+                    </div>
+                </div>
+
+                <button onclick="requestNotificationPermission()" class="w-full bg-[#06D6A0] text-gray-900 py-3 rounded-2xl font-black cartoon-border cartoon-shadow-sm active-press shrink-0 flex justify-center items-center gap-2">
+                    <i class="ph-bold ph-bell-ringing"></i> 允許瀏覽器推播
+                </button>
+            </div>
+        </div>
+
+        <div id="custom-dialog" class="hidden absolute inset-0 z-[100] flex items-center justify-center p-5">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="closeDialog()"></div>
+            <div class="bg-white p-6 rounded-[30px] cartoon-border cartoon-shadow z-10 w-full max-w-[300px] text-center slide-up">
+                <div id="dialog-icon" class="text-6xl mb-2">🤔</div>
+                <h3 id="dialog-title" class="text-xl font-black text-gray-800 mb-2">提示</h3>
+                <p id="dialog-message" class="text-sm font-bold text-gray-500 mb-6">訊息</p>
+                <div class="flex gap-3">
+                    <button id="dialog-cancel" onclick="closeDialog()" class="flex-1 bg-white py-3 rounded-xl font-black border-2 border-gray-200 hidden active-press">取消</button>
+                    <button id="dialog-confirm" class="flex-1 bg-[#06D6A0] py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press">確定</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 設定預算 Modal -->
+        <div id="budget-modal" class="hidden absolute inset-0 z-[100] flex items-center justify-center p-5">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="closeBudgetModal()"></div>
+            <div class="bg-white p-6 rounded-[30px] cartoon-border cartoon-shadow z-10 w-full max-w-[320px] slide-up">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-black text-gray-800">設定本月預算 🎯</h3>
+                    <button onclick="closeBudgetModal()" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
+                </div>
+                <p class="text-xs font-bold text-gray-500 mb-4">告訴管家您這個月最多想花多少錢，我會為您精算每日可用的額度喔！</p>
+                <div class="flex gap-2 mb-6 h-14">
+                    <span class="flex items-center justify-center bg-gray-100 cartoon-border rounded-xl px-4 font-black text-gray-600">HK$</span>
+                    <input type="number" id="budget-input" placeholder="例如: 5000" class="flex-1 bg-gray-50 cartoon-border rounded-xl px-4 text-xl font-black focus:outline-none min-w-0" pattern="[0-9]*" inputmode="numeric">
+                </div>
+                <button onclick="saveBudget()" class="w-full bg-[#06D6A0] text-gray-900 py-3 rounded-2xl font-black cartoon-border cartoon-shadow-sm active-press flex justify-center items-center gap-2">
+                    <i class="ph-bold ph-check-circle text-xl"></i> 確定設定
+                </button>
+            </div>
+        </div>
+
+        <!-- 設定自訂背景 Modal -->
+        <div id="bg-modal" class="hidden absolute inset-0 z-[100] flex items-center justify-center p-5">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="closeBgModal()"></div>
+            <div class="bg-white p-6 rounded-[30px] cartoon-border cartoon-shadow z-10 w-full max-w-[320px] slide-up">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-black text-gray-800">專屬佈景 🖼️</h3>
+                    <button onclick="closeBgModal()" class="text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x"></i></button>
+                </div>
+                <p class="text-xs font-bold text-gray-500 mb-6">選擇一張喜歡的照片，讓管家為您換上新佈景！(系統會自動壓縮以節省雲端空間喔)</p>
+                
+                <input type="file" id="bg-file-input" accept="image/*" class="hidden" onchange="handleBgUpload(event)">
+                <button onclick="document.getElementById('bg-file-input').click()" class="w-full bg-[#118AB2] text-white py-3 rounded-2xl font-black cartoon-border cartoon-shadow-sm active-press mb-3 flex justify-center items-center gap-2">
+                    <i class="ph-bold ph-upload-simple text-xl"></i> 上傳照片
+                </button>
+                <button onclick="removeBg()" class="w-full bg-gray-100 text-gray-600 py-3 rounded-2xl font-black cartoon-border border-2 active-press flex justify-center items-center gap-2">
+                    <i class="ph-bold ph-trash text-xl"></i> 恢復預設背景
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase 模組化載入與雲端同步邏輯 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =================================================================
+        // 🌟 已成功對接：您的真實雲端 Firebase 設定檔
+        // =================================================================
+        const backupConfig = {
+            apiKey: "AIzaSyDwpyYF1_k7T7NJKjrjd9ljlz7EGm195YE",
+            authDomain: "money-saver-v1.firebaseapp.com",
+            projectId: "money-saver-v1",
+            storageBucket: "money-saver-v1.firebasestorage.app",
+            messagingSenderId: "1076044347309",
+            appId: "1:1076044347309:web:85c2ca94f9c7a2ed239324"
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' && __firebase_config !== '{}' && __firebase_config !== ''
+            ? JSON.parse(__firebase_config) 
+            : backupConfig; 
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'my-stable-expense-app';
+
+        let currentUser = null;
+        let unsubscribeSnapshot = null;
+
+        const categories = {
+            expense: [
+                { id: 'food', name: '吃飯', icon: 'ph-hamburger', bg: 'bg-[#FFD166]', text: 'text-gray-800', hex: '#FFD166' },
+                { id: 'transport', name: '交通', icon: 'ph-train', bg: 'bg-[#118AB2]', text: 'text-white', hex: '#118AB2' },
+                { id: 'shopping', name: '血拼', icon: 'ph-shopping-bag', bg: 'bg-[#EF476F]', text: 'text-white', hex: '#EF476F' },
+                { id: 'bills', name: '帳單', icon: 'ph-file-text', bg: 'bg-[#073B4C]', text: 'text-white', hex: '#073B4C' },
+                { id: 'entertainment', name: '玩樂', icon: 'ph-game-controller', bg: 'bg-[#06D6A0]', text: 'text-gray-900', hex: '#06D6A0' },
+                { id: 'other', name: '其他', icon: 'ph-dots-three', bg: 'bg-gray-200', text: 'text-gray-600', hex: '#e5e7eb' }
+            ],
+            income: [
+                { id: 'salary', name: '發薪', icon: 'ph-money', bg: 'bg-[#06D6A0]', text: 'text-gray-900', hex: '#06D6A0' },
+                { id: 'investment', name: '投資', icon: 'ph-trend-up', bg: 'bg-[#118AB2]', text: 'text-white', hex: '#118AB2' },
+                { id: 'other_inc', name: '撿到錢', icon: 'ph-gift', bg: 'bg-[#FFD166]', text: 'text-gray-800', hex: '#FFD166' }
+            ]
+        };
+
+        const BASE_CURRENCY = 'hkd'; 
+        const supportedCurrencies = {
+            'hkd': { code: 'HKD', name: '港幣', symbol: '$', decimals: 2 },
+            'twd': { code: 'TWD', name: '台幣', symbol: 'NT$', decimals: 0 },
+            'usd': { code: 'USD', name: '美金', symbol: '$', decimals: 2 },
+            'jpy': { code: 'JPY', name: '日圓', symbol: '¥', decimals: 0 },
+            'eur': { code: 'EUR', name: '歐元', symbol: '€', decimals: 2 },
+            'gbp': { code: 'GBP', name: '英鎊', symbol: '£', decimals: 2 },
+            'cny': { code: 'CNY', name: '人民幣', symbol: '¥', decimals: 2 },
+            'krw': { code: 'KRW', name: '韓元', symbol: '₩', decimals: 0 },
+            'btc': { code: 'BTC', name: '比特幣', symbol: '₿', decimals: 6 },
+            'eth': { code: 'ETH', name: '以太幣', symbol: 'Ξ', decimals: 5 },
+            'usdt': { code: 'USDT', name: '泰達幣', symbol: '₮', decimals: 2 },
+            'sol': { code: 'SOL', name: 'Solana', symbol: '◎', decimals: 4 }
+        };
+        
+        let exchangeRates = {
+            hkd: 1, twd: 4.15, usd: 0.128, jpy: 19.8, eur: 0.118, gbp: 0.10, cny: 0.92, krw: 175.5,
+            btc: 0.0000019, eth: 0.000034, usdt: 0.128, sol: 0.00075
+        };
+
+        let currentType = 'expense';
+        let selectedCategory = 'food';
+        let transactions = [];
+        let creditCards = []; 
+        let monthlyBudget = 0; 
+        let customBgUrl = null; 
+        let expenseChartInstance = null, incomeChartInstance = null, trendChartInstance = null, overviewChartInstance = null;
+        let currentChartPeriod = 'weekly';
+        let selectedDate = dayjs().format('YYYY-MM-DD');
+        let displayMonth = dayjs().startOf('month');
+        let userLocation = { name: '香港', lat: 22.3193, lon: 114.1694 };
+
+        // ==========================================
+        // 會員登入系統邏輯
+        // ==========================================
+        let isRegisterMode = false;
+        const viewAuth = document.getElementById('view-auth');
+        const viewMain = document.getElementById('view-main');
+        const authEmail = document.getElementById('auth-email');
+        const authPassword = document.getElementById('auth-password');
+        const authError = document.getElementById('auth-error');
+        const btnLogin = document.getElementById('btn-login');
+        const btnRegister = document.getElementById('btn-register');
+        const authToggleMode = document.getElementById('auth-toggle-mode');
+
+        authToggleMode.onclick = () => {
+            isRegisterMode = !isRegisterMode;
+            authError.classList.add('hidden');
+            if (isRegisterMode) {
+                document.getElementById('auth-title').innerText = '建立專屬檔案 🐣';
+                btnLogin.classList.add('hidden');
+                btnRegister.classList.remove('hidden');
+                authToggleMode.innerHTML = '已有檔案？<span class="text-[#118AB2] underline underline-offset-2">請管家開門</span>';
+            } else {
+                document.getElementById('auth-title').innerText = '管家為您服務！';
+                btnLogin.classList.remove('hidden');
+                btnRegister.classList.add('hidden');
+                authToggleMode.innerHTML = '還沒有帳號？<span class="text-[#118AB2] underline underline-offset-2">請管家建檔</span>';
+            }
+        };
+
+        function showAuthError(msg) { authError.innerText = msg; authError.classList.remove('hidden'); }
+
+        btnLogin.onclick = async () => {
+            const email = authEmail.value.trim(); const password = authPassword.value;
+            if (!email || !password) return showAuthError('管家需要您的 Email 與密碼');
+            btnLogin.innerText = '核對身分中...';
+            try { await signInWithEmailAndPassword(auth, email, password); } 
+            catch(e) { 
+                console.error(e);
+                if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found') showAuthError('帳號或密碼錯誤');
+                else showAuthError('登入失敗，請先確認後台認證功能是否開啟');
+                btnLogin.innerText = '登入'; 
+            }
+        };
+
+        btnRegister.onclick = async () => {
+            const email = authEmail.value.trim(); const password = authPassword.value;
+            if (!email || password.length < 6) return showAuthError('密碼至少需要 6 個字元喔');
+            btnRegister.innerText = '建檔中...';
+            try { await createUserWithEmailAndPassword(auth, email, password); } 
+            catch(e) {
+                if (e.code === 'auth/email-already-in-use') showAuthError('這個 Email 已經建過檔囉');
+                else showAuthError('註冊失敗，請稍後再試');
+                btnRegister.innerText = '註冊並登入';
+            }
+        };
+
+        document.getElementById('btn-anonymous').onclick = async () => {
+            try { await signInAnonymously(auth); } catch(e) { showAuthError('目前配置無法提供免登入體驗，請開啟 Firebase 的匿名認證功能'); }
+        };
+
+        document.getElementById('btn-logout').onclick = async () => {
+            if (confirm('管家隨時為您看守金庫。確定要登出嗎？')) {
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+                await signOut(auth);
+                transactions = []; creditCards = [];
+                viewMain.classList.add('hidden'); viewAuth.classList.remove('hidden');
+            }
+        };
+
+        // 🌟 實時抓取收支監聽引擎
+        onAuthStateChanged(auth, async (user) => {
+            currentUser = user;
+            if (user) {
+                viewAuth.classList.add('hidden'); viewMain.classList.remove('hidden');
+                const emailDisplay = document.getElementById('user-email-display');
+                if (user.isAnonymous) { emailDisplay.innerText = '訪客主人'; emailDisplay.classList.add('text-gray-500'); } 
+                else { emailDisplay.innerText = user.email; emailDisplay.classList.remove('text-gray-500'); }
+
+                // 抓取天氣設定
+                try {
+                    const prefDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'preferences', 'weather'));
+                    if (prefDoc.exists()) userLocation = prefDoc.data();
+                } catch(e) { console.error(e); }
+                fetchWeather(userLocation.lat, userLocation.lon, userLocation.name);
+
+                // 抓取信用卡設定
+                try {
+                    const cardDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'preferences', 'cards'));
+                    if (cardDoc.exists()) creditCards = cardDoc.data().list || [];
+                    renderCardList();
+                } catch(e) { console.error(e); }
+
+                // 抓取預算設定
+                try {
+                    const budgetDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'preferences', 'budget'));
+                    if (budgetDoc.exists()) {
+                        monthlyBudget = budgetDoc.data().target || 0;
+                        document.getElementById('budget-input').value = monthlyBudget > 0 ? monthlyBudget : '';
+                    }
+                } catch(e) { console.error(e); }
+
+                // 抓取背景設定
+                try {
+                    const bgDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'preferences', 'background'));
+                    if (bgDoc.exists()) {
+                        customBgUrl = bgDoc.data().image;
+                        applyBg();
+                    } else {
+                        customBgUrl = null;
+                        applyBg();
+                    }
+                } catch(e) { console.error(e); }
+
+                // 實時數據更新：免重新整理，秒速同步！
+                if (unsubscribeSnapshot) unsubscribeSnapshot();
+                unsubscribeSnapshot = onSnapshot(collection(db, 'artifacts', appId, 'users', user.uid, 'transactions'), (snapshot) => {
+                    transactions = [];
+                    snapshot.forEach(doc => {
+                        transactions.push(doc.data());
+                    });
+                    updateUI(); 
+                }, (error) => {
+                    console.error("Snapshot error:", error);
+                });
+            }
+        });
+
+        async function init() {
+            initCurrencySelects(); 
+            await fetchExchangeRates();
+            renderCalendar();
+            setupPullToRefresh(); 
+        }
+
+        // ==========================================
+        // 下拉更新機制 (Pull-to-Refresh) 
+        // ==========================================
+        function setupPullToRefresh() {
+            const scrollContainer = document.getElementById('ptr-scroll-container');
+            const ptrIndicator = document.getElementById('ptr-indicator');
+            const ptrText = document.getElementById('ptr-text');
+            const ptrIcon = document.getElementById('ptr-icon');
+            
+            let touchStartY = 0;
+            let isPulling = false;
+
+            scrollContainer.addEventListener('touchstart', (e) => {
+                if (scrollContainer.scrollTop === 0) {
+                    touchStartY = e.touches[0].clientY;
+                    isPulling = true;
+                }
+            }, { passive: true });
+
+            scrollContainer.addEventListener('touchmove', (e) => {
+                if (!isPulling) return;
+                const currentY = e.touches[0].clientY;
+                const pullDistance = currentY - touchStartY;
+
+                if (pullDistance > 0 && scrollContainer.scrollTop === 0) {
+                    const height = Math.min(pullDistance * 0.4, 50);
+                    ptrIndicator.style.height = `${height}px`;
+                    ptrIndicator.style.opacity = `${height / 50}`;
+                    if (height >= 45) {
+                        ptrText.innerText = "放開立即同步雲端金庫...";
+                        ptrIcon.className = "ph-bold ph-arrow-up text-base text-[#EF476F]";
+                    } else {
+                        ptrText.innerText = "繼續下拉手動更新...";
+                        ptrIcon.className = "ph-bold ph-arrow-down text-base animate-bounce";
+                    }
+                }
+            }, { passive: true });
+
+            scrollContainer.addEventListener('touchend', async () => {
+                if (!isPulling) return;
+                isPulling = false;
+                const currentHeight = parseInt(ptrIndicator.style.height) || 0;
+
+                if (currentHeight >= 45) {
+                    ptrIndicator.style.height = "40px";
+                    ptrText.innerText = "讀取雲端最新數據中...";
+                    ptrIcon.className = "ph-bold ph-spinner animate-spin text-base text-[#118AB2]";
+
+                    if (currentUser) {
+                        showToast('正在手動校驗雲端帳目...', '🔄');
+                        await fetchExchangeRates(); 
+                        updateUI();
+                    }
+
+                    setTimeout(() => {
+                        ptrIndicator.style.height = "0px";
+                        ptrIndicator.style.opacity = "0";
+                        showToast('金庫數據同步完成！', '✅');
+                    }, 800);
+                } else {
+                    ptrIndicator.style.height = "0px";
+                    ptrIndicator.style.opacity = "0";
+                }
+                touchStartY = 0;
+            }, { passive: true });
+        }
+
+        // ==========================================
+        // AI 管家分析邏輯
+        // ==========================================
+        function generateAISuggestion(monthIncome, monthExpense, monthTx) {
+            const suggestionEl = document.getElementById('ai-suggestion-text');
+            const today = dayjs();
+            const isCurrentMonth = displayMonth.isSame(today, 'month');
+
+            if (monthlyBudget > 0 && isCurrentMonth) {
+                const endOfMonth = today.endOf('month');
+                const daysRemaining = endOfMonth.diff(today, 'day') + 1; 
+                const remainingBudget = monthlyBudget - monthExpense;
+                const dailyLimit = remainingBudget > 0 ? (remainingBudget / daysRemaining).toFixed(0) : 0;
+
+                let msg = "";
+                if (remainingBudget < 0) {
+                    msg = `🚨 警報！本月花費已超出預算 <span class="text-[#EF476F]">HK$${Math.abs(Math.round(remainingBudget)).toLocaleString()}</span>！<br><span class="text-[#EF476F]">接下來的日子要超級省吃儉用囉！管家盯著您呢！👀</span>`;
+                } else if (remainingBudget === 0) {
+                    msg = `⚠️ 預算剛剛好花光光了！這個月不能再有任何額外開銷囉！`;
+                } else {
+                    const usedPercent = (monthExpense / monthlyBudget) * 100;
+                    if (usedPercent > 90) {
+                        msg = `😰 預算快見底啦！剩 HK$${Math.round(remainingBudget).toLocaleString()}。本月還有 ${daysRemaining} 天，每天只能花 <span class="text-[#EF476F] font-black text-sm">HK$${dailyLimit}</span> 喔！`;
+                    } else if (usedPercent > 70) {
+                        msg = `👀 預算已用 ${usedPercent.toFixed(0)}%！剩 HK$${Math.round(remainingBudget).toLocaleString()}。建議每天控制在 <span class="text-[#FFD166] font-black text-sm">HK$${dailyLimit}</span> 內。`;
+                    } else {
+                        msg = `👍 預算控制得很好！剩 HK$${Math.round(remainingBudget).toLocaleString()}。本月還有 ${daysRemaining} 天，每天額度有 <span class="text-[#06D6A0] font-black text-sm">HK$${dailyLimit}</span>，繼續保持！`;
+                    }
+                }
+                suggestionEl.innerHTML = msg;
+                return;
+            } else if (monthlyBudget > 0 && !isCurrentMonth) {
+                 const remainingBudget = monthlyBudget - monthExpense;
+                 if (remainingBudget < 0) {
+                     suggestionEl.innerHTML = `這月超出了設定的預算 HK$${monthlyBudget.toLocaleString()}，共超支 <span class="text-[#EF476F]">HK$${Math.abs(Math.round(remainingBudget)).toLocaleString()}</span>。`;
+                 } else {
+                     suggestionEl.innerHTML = `這月控制得很不錯！預算 HK$${monthlyBudget.toLocaleString()}，結餘 <span class="text-[#06D6A0]">HK$${Math.round(remainingBudget).toLocaleString()}</span>。`;
+                 }
+                 return;
+            }
+
+            if (monthTx.length === 0) {
+                suggestionEl.innerHTML = "這個月還沒有紀錄喔！快記下第一筆花費，管家來幫您分析！🔍<br><span class=\"text-[#118AB2]\">💡小撇步：點擊右上角「設定預算」，管家能幫您精算每天能花多少錢喔！</span>";
+                return;
+            }
+
+            const expenseCatTotals = {};
+            monthTx.forEach(tx => {
+                if (tx.type === 'expense') expenseCatTotals[tx.category] = (expenseCatTotals[tx.category] || 0) + tx.baseAmount;
+            });
+
+            let topCategory = null, topAmount = 0;
+            for (const cat in expenseCatTotals) {
+                if (expenseCatTotals[cat] > topAmount) { topAmount = expenseCatTotals[cat]; topCategory = cat; }
+            }
+
+            const catInfo = topCategory ? categories.expense.find(c => c.id === topCategory) : null;
+            const balance = monthIncome - monthExpense;
+
+            let msg = "";
+            if (monthExpense === 0) {
+                msg = `目前只有進帳沒有花費，太厲害了！您的金庫正在閃閃發光 ✨<br><span class="text-[#06D6A0]">管家會為您好好看守！👍</span>`;
+            } else if (balance < 0) {
+                msg = `⚠️ 哎呀！這個月透支了 <span class="text-[#EF476F]">HK$${Math.abs(Math.round(balance)).toLocaleString()}</span>！最大宗是「${catInfo ? catInfo.name : '其他'}」。<br><span class="text-[#EF476F]">請不用擔心，記帳就是為了發現問題。我們下個月稍微調整，管家陪您一起努力！💪</span>`;
+            } else if (monthExpense > monthIncome * 0.8 && monthIncome > 0) {
+                msg = `👀 管家溫馨提醒：花費已達收入的 80%。「${catInfo ? catInfo.name : '其他'}」佔比最高。<br><span class="text-[#118AB2]">建議稍微踩個煞車，留點預算給未來的自己喔！✨</span>`;
+            } else if (topCategory) {
+                msg = `👍 目前資金健康度非常好！「${catInfo ? catInfo.name : '其他'}」是您最願意投資的地方。<br><span class="text-[#06D6A0]">繼續保持好習慣，金庫會越來越滿的！🎉</span>`;
+            } else {
+                msg = `持續紀錄中！了解金錢流向是理財的第一步。📝<br><span class="text-[#118AB2]">💡點擊右上角「設定預算」，管家可以幫您規劃每日額度喔！</span>`;
+            }
+            suggestionEl.innerHTML = msg;
+        }
+
+        // ==========================================
+        // 設定預算系統 (Budget System)
+        // ==========================================
+        function openBudgetModal() { 
+            document.getElementById('budget-modal').classList.remove('hidden'); 
+            document.getElementById('budget-input').focus();
+        }
+        function closeBudgetModal() { document.getElementById('budget-modal').classList.add('hidden'); }
+        
+        async function saveBudget() {
+            const val = parseFloat(document.getElementById('budget-input').value);
+            monthlyBudget = (isNaN(val) || val <= 0) ? 0 : val;
+            
+            closeBudgetModal();
+            if (currentUser && !currentUser.isAnonymous) {
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'preferences', 'budget'), { target: monthlyBudget });
+                    if(monthlyBudget > 0) showToast('預算設定完成！🎯', '✅');
+                    else showToast('預算已取消！', '✅');
+                } catch(e) { console.error('Save budget failed', e); }
+            }
+            updateUI(); 
+        }
+
+        // ==========================================
+        // 自訂背景系統 (Background System)
+        // ==========================================
+        function openBgModal() { document.getElementById('bg-modal').classList.remove('hidden'); }
+        function closeBgModal() { document.getElementById('bg-modal').classList.add('hidden'); document.getElementById('bg-file-input').value = ''; }
+
+        function handleBgUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 800; 
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > MAX_SIZE) {
+                        height *= MAX_SIZE / width; width = MAX_SIZE;
+                    } else if (height > MAX_SIZE) {
+                        width *= MAX_SIZE / height; height = MAX_SIZE;
+                    }
+
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); 
+                    customBgUrl = dataUrl;
+                    applyBg();
+                    closeBgModal();
+                    
+                    if (currentUser && !currentUser.isAnonymous) {
+                        try {
+                            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'preferences', 'background'), { image: dataUrl });
+                            showToast('專屬佈景更換成功！✨', '✅');
+                        } catch (err) {
+                            console.error(err); showToast('佈景上傳失敗', '❌');
+                        }
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function removeBg() {
+            customBgUrl = null; applyBg(); closeBgModal();
+            if (currentUser && !currentUser.isAnonymous) {
+                try { await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'preferences', 'background')); } catch(e) { console.error(e); }
+            }
+            showToast('已恢復預設佈景！', '✅');
+        }
+
+        function applyBg() {
+            const appContainer = document.getElementById('app-container');
+            const overlay = document.getElementById('app-bg-overlay');
+            if (customBgUrl) {
+                appContainer.style.backgroundImage = `url(${customBgUrl})`;
+                overlay.classList.remove('hidden');
+            } else {
+                appContainer.style.backgroundImage = 'none';
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // ==========================================
+        // 信用卡與通知系統 💳🔔
+        // ==========================================
+        async function saveCardsToCloud() {
+            if (!currentUser) return;
+            try { await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'preferences', 'cards'), { list: creditCards }); }
+            catch(e) { console.error('Save cards failed', e); }
+        }
+
+        async function addCreditCard() {
+            const name = document.getElementById('card-name-input').value.trim();
+            const date = parseInt(document.getElementById('card-date-input').value);
+            if (!name || isNaN(date) || date < 1 || date > 31) { showToast('請輸入正確的卡片名稱與結帳日(1-31)', '❌'); return; }
+            
+            creditCards.push({ id: Date.now().toString(), name, dueDate: date, lastPaidMonth: '' });
+            await saveCardsToCloud();
+            document.getElementById('card-name-input').value = ''; document.getElementById('card-date-input').value = '';
+            renderCardList(); checkNotifications(); showToast('已加入還款追蹤！', '✅');
+        }
+
+        async function markCardPaid(id) {
+            const card = creditCards.find(c => c.id === id);
+            if (card) {
+                card.lastPaidMonth = dayjs().format('YYYY-MM'); 
+                await saveCardsToCloud();
+                renderCardList(); checkNotifications(); showToast('太棒了！已標記為繳清！', '✅');
+            }
+        }
+
+        async function deleteCard(id) {
+            if (confirm('確定要取消這張卡的還款提醒嗎？')) {
+                creditCards = creditCards.filter(c => c.id !== id);
+                await saveCardsToCloud(); renderCardList(); checkNotifications();
+            }
+        }
+
+        function renderCardList() {
+            const container = document.getElementById('card-list-container'); container.innerHTML = '';
+            const currentMonth = dayjs().format('YYYY-MM');
+            
+            if(creditCards.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-400 text-xs py-2">目前沒有設定任何信用卡</div>`;
+                return;
+            }
+
+            creditCards.forEach(card => {
+                const isPaid = card.lastPaidMonth === currentMonth;
+                const btnHtml = isPaid 
+                    ? `<span class="text-[10px] font-black text-[#06D6A0] bg-[#06D6A0]/10 px-2 py-1 rounded-lg border border-[#06D6A0]/30">✅ 本月已繳</span>`
+                    : `<button onclick="markCardPaid('${card.id}')" class="text-xs font-black bg-[#06D6A0] text-gray-900 px-3 py-1 rounded-lg cartoon-border border-2 active-press shadow-sm">標記已繳</button>`;
+                    
+                container.innerHTML += `
+                    <div class="bg-white p-3 rounded-2xl cartoon-border border-2 flex justify-between items-center mb-2">
+                        <div>
+                            <div class="font-black text-gray-800 text-sm">${card.name}</div>
+                            <div class="text-[10px] font-bold text-gray-500">每月 ${card.dueDate} 號結帳</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${btnHtml}
+                            <button onclick="deleteCard('${card.id}')" class="text-gray-400 hover:text-red-500 ml-1"><i class="ph-bold ph-trash text-sm"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function showToast(msg, icon = '🔔') {
+            const toast = document.createElement('div');
+            toast.className = 'bg-[#1e293b] text-white px-4 py-3 rounded-2xl cartoon-shadow flex items-center gap-3 transform transition-all duration-300 -translate-y-[150%] opacity-0 text-sm font-black border-2 border-white';
+            toast.innerHTML = `<span class="text-xl">${icon}</span> <span>${msg}</span>`;
+            document.getElementById('toast-container').appendChild(toast);
+            setTimeout(() => toast.classList.remove('-translate-y-[150%]', 'opacity-0'), 10);
+            setTimeout(() => { toast.classList.add('-translate-y-[150%]', 'opacity-0'); setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+
+        function checkNotifications() {
+            const notifContainer = document.getElementById('notif-list');
+            if (!notifContainer) return;
+            notifContainer.innerHTML = '';
+            let hasNew = false;
+            
+            const todayStr = dayjs().format('YYYY-MM-DD');
+            const hasToday = transactions.some(t => t.date === todayStr);
+            if (!hasToday) {
+                notifContainer.innerHTML += createNotifHTML('🔔', '管家提醒', '今天還沒記帳喔！別讓金庫漏算任何一筆開銷。', '今日');
+                hasNew = true;
+            } else {
+                notifContainer.innerHTML += createNotifHTML('🎉', '管家稱讚', '太棒了！今天有乖乖記帳，給您一個大大的讚！👍', '今日');
+            }
+            
+            const currentMonth = dayjs().format('YYYY-MM');
+            const todayObj = dayjs().startOf('day');
+
+            creditCards.forEach(card => {
+                if (card.lastPaidMonth === currentMonth) return;
+                let dueThisMonth = dayjs().date(card.dueDate).startOf('day');
+                let diffDays = dueThisMonth.diff(todayObj, 'day');
+                
+                if (diffDays < 0) {
+                    notifContainer.innerHTML += createNotifHTML('🚨', '卡數逾期！', `「${card.name}」已超過結帳日！請盡快處理喔！`, '緊急');
+                    hasNew = true;
+                } else if (diffDays === 0) {
+                    notifContainer.innerHTML += createNotifHTML('💳', '今日結帳！', `「${card.name}」今天結帳！記得去繳納喔！`, '今日');
+                    hasNew = true;
+                } else if (diffDays <= 7) { 
+                    notifContainer.innerHTML += createNotifHTML('💳', '卡數即將到期', `「${card.name}」還有 ${diffDays} 天結帳 (本月 ${card.dueDate} 號)。`, '提醒');
+                    hasNew = true;
+                }
+            });
+            
+            let monthExpense = 0, monthIncome = 0;
+            const viewMonthStart = displayMonth.startOf('month');
+            transactions.forEach(tx => {
+                const d = dayjs(tx.date);
+                if(d.isAfter(viewMonthStart) || d.isSame(viewMonthStart, 'day')) {
+                    if(tx.type === 'expense') monthExpense += tx.baseAmount; else monthIncome += tx.baseAmount;
+                }
+            });
+            
+            if (monthExpense > monthIncome * 0.8 && monthIncome > 0) {
+                notifContainer.innerHTML += createNotifHTML('🚨', '預算警報', '本月花費已達收入的 80% 囉！稍微留意一下。', '系統');
+                hasNew = true;
+            }
+            
+            const badge = document.getElementById('notif-badge');
+            if (badge) { if (hasNew) badge.classList.remove('hidden'); else badge.classList.add('hidden'); }
+        }
+        
+        function createNotifHTML(icon, title, desc, time) {
+            return `
+                <div class="bg-gray-50 p-3 rounded-2xl cartoon-border border-2 flex gap-3 mb-2 items-center">
+                    <div class="text-2xl shrink-0">${icon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="font-black text-gray-800 text-sm truncate pr-2">${title}</span>
+                            <span class="text-[10px] font-bold text-gray-400 shrink-0">${time}</span>
+                        </div>
+                        <div class="text-xs font-bold text-gray-500 leading-tight">${desc}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openNotifModal() { 
+            document.getElementById('notif-modal').classList.remove('hidden'); 
+            const badge = document.getElementById('notif-badge'); if (badge) badge.classList.add('hidden'); 
+        }
+        function closeNotifModal() { document.getElementById('notif-modal').classList.add('hidden'); }
+
+        function requestNotificationPermission() {
+            if ("Notification" in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        showToast('已成功開啟系統推播！', '✅');
+                        new Notification("開支小管家", { body: "測試通知：管家在此為您服務！🤖" });
+                    } else { showToast('已拒絕或不支援推播通知', '❌'); }
+                });
+            } else { showToast('您的瀏覽器不支援推播功能', '❌'); }
+        }
+
+        // ==========================================
+        // 匯率與天氣系統 
+        // ==========================================
+        async function fetchExchangeRates() {
+            try {
+                const res = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/hkd.json`);
+                const data = await res.json();
+                Object.keys(supportedCurrencies).forEach(key => { if (data.hkd[key]) exchangeRates[key] = data.hkd[key]; });
+                document.getElementById('rate-status').innerText = '🔄 匯率已更新至最新';
+            } catch(e) { document.getElementById('rate-status').innerText = '⚠️ 離線模式 (使用預設匯率)'; }
+            renderQuickRates(); calculateExchange();
+        }
+
+        function initCurrencySelects() {
+            let optionsHTML = '';
+            for (let key in supportedCurrencies) optionsHTML += `<option value="${key}">${supportedCurrencies[key].code}</option>`;
+            document.getElementById('currency-select').innerHTML = optionsHTML; document.getElementById('currency-select').value = 'hkd';
+            document.getElementById('calc-from-currency').innerHTML = optionsHTML; document.getElementById('calc-from-currency').value = 'hkd';
+            document.getElementById('calc-to-currency').innerHTML = optionsHTML; document.getElementById('calc-to-currency').value = 'btc';
+        }
+
+        function calculateExchange() {
+            const fromCur = document.getElementById('calc-from-currency').value;
+            const toCur = document.getElementById('calc-to-currency').value;
+            const amount = parseFloat(document.getElementById('calc-amount').value) || 0;
+            const finalAmount = (amount / exchangeRates[fromCur]) * exchangeRates[toCur];
+            const sym = supportedCurrencies[toCur].symbol;
+            const dec = supportedCurrencies[toCur].decimals;
+            document.getElementById('calc-result').innerText = `${sym} ${finalAmount.toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec})}`;
+        }
+
+        function renderQuickRates() {
+            const container = document.getElementById('quick-rates-container'); container.innerHTML = '';
+            ['twd', 'jpy', 'usd', 'btc', 'eth', 'sol'].forEach(cur => {
+                const amount = 100 * exchangeRates[cur];
+                const info = supportedCurrencies[cur];
+                let displayAmount = amount < 1 ? amount.toFixed(info.decimals) : Math.round(amount).toLocaleString();
+                const div = document.createElement('div');
+                div.className = 'bg-gray-50 border-2 border-gray-100 rounded-xl p-3 flex items-center justify-between';
+                div.innerHTML = `<span class="text-xs font-black text-gray-500">${info.name}</span><span class="font-black text-gray-800">${info.symbol} ${displayAmount}</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        async function fetchWeather(lat, lon, locName) {
+            try {
+                document.getElementById('weather-text').innerText = '管家觀測天氣中...'; document.getElementById('weather-icon').innerText = '⏳';
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                const data = await res.json();
+                const temp = Math.round(data.current_weather.temperature);
+                const code = data.current_weather.weathercode;
+                let icon = '☀️', sub = '好天氣，適合出門走走！';
+                if (code >= 1 && code <= 3) { icon = '⛅'; sub = '涼爽舒適的一天🚶'; }
+                else if (code >= 45 && code <= 48) { icon = '🌫️'; sub = '注意安全喔👀'; }
+                else if (code >= 51 && code <= 67) { icon = '🌧️'; sub = '出門記得帶傘喔☔'; }
+                else if (code >= 71 && code <= 77) { icon = '❄️'; sub = '記得穿暖和一點⛄'; }
+                else if (code >= 95) { icon = '⛈️'; sub = '待在室內比較安全⚡'; }
+                document.getElementById('weather-icon').innerText = icon;
+                document.getElementById('weather-text').innerText = `${locName} ${temp}°C`;
+                document.getElementById('weather-subtext').innerText = sub;
+                
+                userLocation = { name: locName, lat, lon };
+                if (currentUser && !currentUser.isAnonymous) {
+                    setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'preferences', 'weather'), userLocation).catch(e=>console.error(e));
+                }
+            } catch(e) { document.getElementById('weather-icon').innerText = '❌'; document.getElementById('weather-text').innerText = '天氣載入失敗'; }
+        }
+        function openWeatherModal() { document.getElementById('weather-modal').classList.remove('hidden'); }
+        function closeWeatherModal() { document.getElementById('weather-modal').classList.add('hidden'); }
+        function useCurrentLocation() {
+            if (navigator.geolocation) {
+                closeWeatherModal(); document.getElementById('weather-text').innerText = '管家定位中...';
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    try {
+                        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=zh`);
+                        const data = await res.json();
+                        fetchWeather(pos.coords.latitude, pos.coords.longitude, data.city || data.locality || '當地');
+                    } catch(e) { fetchWeather(pos.coords.latitude, pos.coords.longitude, '當前位置'); }
+                }, () => { fetchWeather(userLocation.lat, userLocation.lon, userLocation.name); });
+            }
+        }
+        async function searchCityWeather() {
+            const city = document.getElementById('city-input').value.trim();
+            if(!city) return;
+            closeWeatherModal(); document.getElementById('weather-text').innerText = '管家尋找城市中...';
+            try {
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1&language=zh`);
+                const geoData = await geoRes.json();
+                if(geoData.results?.length > 0) fetchWeather(geoData.results[0].latitude, geoData.results[0].longitude, geoData.results[0].name);
+                else fetchWeather(userLocation.lat, userLocation.lon, userLocation.name);
+            } catch(e) { fetchWeather(userLocation.lat, userLocation.lon, userLocation.name); }
+        }
+
+        // ==========================================
+        // 核心記帳與雲端寫入邏輯
+        // ==========================================
+        function changeMonth(step) { displayMonth = displayMonth.add(step, 'month'); renderCalendar(); updateUI(); }
+        function renderCalendar() {
+            const container = document.getElementById('calendar-strip'); container.innerHTML = '';
+            document.getElementById('calendar-month-display').innerText = displayMonth.format('YYYY年M月');
+            const daysInMonth = displayMonth.daysInMonth();
+            const currentMonthStr = displayMonth.format('YYYY-MM');
+            let selectedBtn = null;
+            for(let i=1; i<=daysInMonth; i++) {
+                const dateObj = dayjs(`${currentMonthStr}-${i}`);
+                const dateStr = dateObj.format('YYYY-MM-DD');
+                const isSelected = dateStr === selectedDate;
+                const isToday = dateStr === dayjs().format('YYYY-MM-DD');
+                const btn = document.createElement('button');
+                let styleClass = isSelected ? 'bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm transform -translate-y-1' : (isToday ? 'bg-yellow-100 text-yellow-600 border-2 border-yellow-300' : 'bg-white text-gray-400 border-2 border-gray-200');
+                btn.className = `flex-shrink-0 flex flex-col items-center justify-center w-[52px] h-[64px] rounded-2xl transition-all active-press relative ${styleClass}`;
+                btn.onclick = () => { selectedDate = dateStr; renderCalendar(); updateUI(); };
+                btn.innerHTML = `<span class="text-[10px] font-black mb-0.5 opacity-80">${['日','一','二','三','四','五','六'][dateObj.day()]}</span><span class="text-xl font-black leading-none">${i}</span>`;
+                container.appendChild(btn);
+                if (isSelected) selectedBtn = btn;
+            }
+            if (selectedBtn) setTimeout(() => selectedBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' }), 50);
+        }
+
+        function showDialog(title, message, type, callback) {
+            document.getElementById('custom-dialog').classList.remove('hidden');
+            document.getElementById('dialog-title').innerText = title; document.getElementById('dialog-message').innerText = message;
+            const cancelBtn = document.getElementById('dialog-cancel'); const confirmBtn = document.getElementById('dialog-confirm');
+            if (type === 'confirm') {
+                document.getElementById('dialog-icon').innerText = '🗑️'; cancelBtn.classList.remove('hidden');
+                confirmBtn.className = 'flex-1 bg-[#EF476F] text-white py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '刪除';
+            } else {
+                document.getElementById('dialog-icon').innerText = '😲'; cancelBtn.classList.add('hidden');
+                confirmBtn.className = 'flex-1 bg-[#06D6A0] text-gray-900 py-3 rounded-xl font-black cartoon-border cartoon-shadow-sm active-press'; confirmBtn.innerText = '知道了';
+            }
+            confirmBtn.onclick = () => { closeDialog(); if (callback) callback(); };
+        }
+        function closeDialog() { document.getElementById('custom-dialog').classList.add('hidden'); }
+
+        function setType(type) {
+            currentType = type;
+            document.getElementById('type-expense').className = type === 'expense' ? 'flex-1 py-3 rounded-2xl text-sm font-black bg-[#FFD166] text-gray-900 cartoon-border cartoon-shadow-sm active-press' : 'flex-1 py-3 rounded-2xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200';
+            document.getElementById('type-income').className = type === 'income' ? 'flex-1 py-3 rounded-2xl text-sm font-black bg-[#06D6A0] text-gray-900 cartoon-border cartoon-shadow-sm active-press' : 'flex-1 py-3 rounded-2xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200';
+            selectedCategory = categories[type][0].id; renderCategoryButtons();
+        }
+
+        function renderCategoryButtons() {
+            const container = document.getElementById('category-container'); container.innerHTML = '';
+            categories[currentType].forEach(cat => {
+                const btn = document.createElement('button');
+                btn.onclick = () => { selectedCategory = cat.id; renderCategoryButtons(); };
+                btn.className = `flex flex-col items-center justify-center p-3 rounded-2xl transition-all ${selectedCategory === cat.id ? `${cat.bg} ${cat.text} cartoon-border cartoon-shadow-sm transform -translate-y-1` : `bg-white border-2 border-gray-200 text-gray-400`}`;
+                btn.innerHTML = `<i class="ph-fill ${cat.icon} text-2xl mb-1"></i><span class="text-xs font-black">${cat.name}</span>`;
+                container.appendChild(btn);
+            });
+        }
+
+        function openModal() {
+            document.getElementById('add-modal').classList.remove('hidden');
+            document.getElementById('amount-input').value = ''; document.getElementById('note-input').value = '';
+            document.getElementById('date-input').value = selectedDate; 
+            setType('expense'); setTimeout(() => document.getElementById('amount-input').focus(), 100);
+        }
+        function closeModal() { document.getElementById('add-modal').classList.add('hidden'); }
+
+        async function saveTransaction() {
+            const amount = parseFloat(document.getElementById('amount-input').value);
+            if (isNaN(amount) || amount <= 0) { showDialog('哎呀！', '忘記填寫金額囉，請輸入數字！', 'alert'); return; }
+            if (!currentUser) { showDialog('稍等一下', '請先登入，管家才能幫您存檔喔！', 'alert'); return; }
+
+            const currency = document.getElementById('currency-select').value;
+            let baseAmount = currency !== BASE_CURRENCY ? amount / exchangeRates[currency] : amount;
+
+            const newDate = document.getElementById('date-input').value;
+            const txId = Date.now().toString();
+            const newTx = {
+                id: txId, type: currentType, amount: amount, currency: currency,
+                baseAmount: baseAmount, category: selectedCategory, date: newDate,
+                note: document.getElementById('note-input').value
+            };
+            
+            closeModal();
+            try {
+                selectedDate = newDate; 
+                displayMonth = dayjs(newDate).startOf('month');
+                renderCalendar();
+                
+                await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', txId), newTx);
+                showToast('已存入管家金庫囉！🤖', '✅');
+            } catch(e) { console.error("Save to cloud failed", e); showDialog('錯誤', '儲存至雲端失敗！請確認 Firestore 規則與金鑰是否正確。', 'alert'); }
+        }
+
+        function deleteTransaction(id) {
+            showDialog('刪除確認', '這筆紀錄真的要刪掉嗎？管家會同步刪除雲端紀錄喔！', 'confirm', async () => {
+                if (!currentUser) return;
+                try { 
+                    await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', id)); 
+                    showToast('紀錄已銷毀！🗑️', '✅');
+                } 
+                catch(e) { console.error("Delete from cloud failed", e); showDialog('錯誤', '從雲端刪除失敗！', 'alert'); }
+            });
+        }
+
+        function updateUI() {
+            let monthIncomeBase = 0, monthExpenseBase = 0;
+            const listContainer = document.getElementById('transaction-list');
+            if (!listContainer) return;
+            const emptyState = document.getElementById('empty-state');
+            listContainer.innerHTML = '';
+
+            const viewMonthStart = displayMonth.startOf('month');
+            const viewMonthEnd = displayMonth.endOf('month');
+            const thisMonthTx = [];
+            
+            transactions.forEach(tx => {
+                const d = dayjs(tx.date);
+                if ((d.isAfter(viewMonthStart) || d.isSame(viewMonthStart, 'day')) && (d.isBefore(viewMonthEnd) || d.isSame(viewMonthEnd, 'day'))) {
+                    thisMonthTx.push(tx);
+                    if (tx.type === 'income') monthIncomeBase += tx.baseAmount;
+                    else monthExpenseBase += tx.baseAmount;
+                }
+            });
+
+            document.getElementById('header-month-label').innerText = `${displayMonth.format('M月')}結餘 💰`;
+            document.getElementById('total-balance').innerText = Math.round(monthIncomeBase - monthExpenseBase).toLocaleString();
+            document.getElementById('total-income').innerText = Math.round(monthIncomeBase).toLocaleString();
+            document.getElementById('total-expense').innerText = Math.round(monthExpenseBase).toLocaleString();
+
+            generateAISuggestion(monthIncomeBase, monthExpenseBase, thisMonthTx);
+
+            const dayTx = transactions.filter(tx => tx.date === selectedDate);
+            if (dayTx.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                const allCategories = [...categories.expense, ...categories.income];
+                dayTx.sort((a, b) => b.amount - a.amount);
+
+                const dayCard = document.createElement('div');
+                dayCard.className = 'bg-white rounded-[30px] p-4 cartoon-border cartoon-shadow-sm mb-4 space-y-3';
+
+                dayTx.forEach(tx => {
+                    const catInfo = allCategories.find(c => c.id === tx.category) || allCategories[5];
+                    const isIncome = tx.type === 'income';
+                    const amountClass = isIncome ? 'text-[#06D6A0]' : 'text-gray-800';
+                    const sign = isIncome ? '+' : '-';
+                    const currInfo = supportedCurrencies[tx.currency || 'hkd'];
+                    
+                    const conversionText = (tx.currency !== BASE_CURRENCY) 
+                        ? `<div class="text-[10px] text-gray-400 font-bold -mt-1 text-right tracking-tighter">≈ HK$${Math.round(tx.baseAmount).toLocaleString()}</div>` : '';
+
+                    const formattedAmount = tx.amount.toLocaleString('en-US', {
+                        minimumFractionDigits: 0, maximumFractionDigits: currInfo.decimals 
+                    });
+
+                    const item = document.createElement('div');
+                    item.className = 'bg-[#FAFAFA] p-3 rounded-2xl flex items-center gap-3 border-2 border-gray-100 relative group';
+                    item.innerHTML = `
+                        <div class="w-12 h-12 shrink-0 rounded-full flex items-center justify-center cartoon-border ${catInfo.bg} ${catInfo.text}">
+                            <i class="ph-fill ${catInfo.icon} text-2xl"></i>
+                        </div>
+                        <div class="flex-1 overflow-hidden">
+                            <div class="font-black text-gray-800 flex items-center gap-1">
+                                ${catInfo.name} 
+                                ${tx.currency !== BASE_CURRENCY ? `<span class="bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded text-[9px]">${currInfo.code}</span>` : ''}
+                            </div>
+                            <div class="text-xs font-bold text-gray-400 mt-0.5 truncate">${tx.note ? tx.note : '無備註'}</div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <div class="font-black text-lg ${amountClass}">${sign}${currInfo.symbol}${formattedAmount}</div>
+                            ${conversionText}
+                        </div>
+                        <button onclick="deleteTransaction('${tx.id}')" class="absolute -right-2 -top-2 bg-[#EF476F] text-white w-6 h-6 rounded-full cartoon-border flex items-center justify-center active-press">
+                            <i class="ph-bold ph-minus text-xs"></i>
+                        </button>
+                    `;
+                    dayCard.appendChild(item);
+                });
+                listContainer.appendChild(dayCard);
+            }
+            renderChart();
+            checkNotifications(); 
+        }
+
+        function switchTab(tab) {
+            const tabs = ['list', 'chart', 'currency'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const view = document.getElementById(`view-${t}`);
+                if (t === tab) {
+                    btn.className = 'flex-1 py-2 text-xs font-black bg-[#118AB2] text-white rounded-xl cartoon-border cartoon-shadow-sm active-press';
+                    view.classList.remove('hidden');
+                    if (t === 'chart') renderChart();
+                } else {
+                    btn.className = 'flex-1 py-2 text-xs font-black bg-white text-gray-400 border-2 border-gray-200 rounded-xl transition-all';
+                    view.classList.add('hidden');
+                }
+            });
+        }
+
+        function setChartPeriod(period) {
+            currentChartPeriod = period;
+            ['weekly', 'monthly', 'yearly'].forEach(p => {
+                const btn = document.getElementById(`filter-${p}`);
+                if (p === period) btn.className = 'px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0';
+                else btn.className = 'px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0';
+            });
+            renderChart();
+        }
+
+        function createDoughnutChart(ctxId, emptyStateId, dataArray, type) {
+            const ctx = document.getElementById(ctxId); const emptyState = document.getElementById(emptyStateId);
+            if (!ctx) return null;
+            if (dataArray.length === 0) { ctx.style.display = 'none'; emptyState.classList.remove('hidden'); return null; } 
+            else { ctx.style.display = 'block'; emptyState.classList.add('hidden'); }
+            const catTotals = {};
+            dataArray.forEach(tx => { catTotals[tx.category] = (catTotals[tx.category] || 0) + tx.baseAmount; });
+            const labels = [], data = [], bgColors = [];
+            categories[type].forEach(cat => {
+                if (catTotals[cat.id]) { labels.push(cat.name); data.push(catTotals[cat.id]); bgColors.push(cat.hex); }
+            });
+            return new Chart(ctx, {
+                type: 'doughnut',
+                data: { labels, datasets: [{ data, backgroundColor: bgColors, borderWidth: 3, borderColor: '#1e293b' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '65%' }
+            });
+        }
+
+        function renderChart() {
+            const now = dayjs(); let startDate, endDate, dateLabels = []; 
+            if (currentChartPeriod === 'weekly') {
+                startDate = now.startOf('week'); endDate = now.endOf('week');
+                for(let i=0; i<7; i++) dateLabels.push(startDate.add(i, 'day').format('MM/DD'));
+            } else if (currentChartPeriod === 'monthly') {
+                startDate = now.startOf('month'); endDate = now.endOf('month');
+                for(let i=1; i<=now.daysInMonth(); i++) dateLabels.push(startDate.date(i).format('DD'));
+            } else {
+                startDate = now.startOf('year'); endDate = now.endOf('year');
+                for(let i=0; i<12; i++) dateLabels.push(startDate.month(i).format('MM月'));
+            }
+
+            const filteredTx = transactions.filter(t => {
+                const d = dayjs(t.date); return (d.isAfter(startDate) || d.isSame(startDate, 'day')) && (d.isBefore(endDate) || d.isSame(endDate, 'day'));
+            });
+
+            let totalPeriodIncome = 0; let totalPeriodExpense = 0;
+            filteredTx.forEach(tx => {
+                if (tx.type === 'income') totalPeriodIncome += tx.baseAmount;
+                else totalPeriodExpense += tx.baseAmount;
+            });
+
+            if (overviewChartInstance) overviewChartInstance.destroy();
+            const overviewCtx = document.getElementById('overviewChart'); const overviewEmpty = document.getElementById('overview-empty-state');
+            if (overviewCtx) {
+                if (totalPeriodIncome === 0 && totalPeriodExpense === 0) {
+                    overviewCtx.style.display = 'none'; overviewEmpty.classList.remove('hidden'); overviewEmpty.classList.add('block');
+                } else {
+                    overviewCtx.style.display = 'block'; overviewEmpty.classList.remove('block'); overviewEmpty.classList.add('hidden');
+                    overviewChartInstance = new Chart(overviewCtx, {
+                        type: 'pie',
+                        data: { labels: ['總收入', '總支出'], datasets: [{ data: [totalPeriodIncome, totalPeriodExpense], backgroundColor: ['#06D6A0', '#FFD166'], borderWidth: 3, borderColor: '#1e293b' }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { family: 'Nunito', weight: 'bold' } } } } }
+                    });
+                }
+            }
+
+            if (expenseChartInstance) expenseChartInstance.destroy();
+            if (incomeChartInstance) incomeChartInstance.destroy();
+            expenseChartInstance = createDoughnutChart('expenseChart', 'expense-empty-state', filteredTx.filter(t => t.type === 'expense'), 'expense');
+            incomeChartInstance = createDoughnutChart('incomeChart', 'income-empty-state', filteredTx.filter(t => t.type === 'income'), 'income');
+
+            let tInc = Array(dateLabels.length).fill(0), tExp = Array(dateLabels.length).fill(0);
+            filteredTx.forEach(tx => {
+                const d = dayjs(tx.date); let labelStr = (currentChartPeriod === 'yearly') ? d.format('MM月') : (currentChartPeriod === 'monthly' ? d.format('DD') : d.format('MM/DD'));
+                const idx = dateLabels.indexOf(labelStr);
+                if (idx !== -1) { if (tx.type === 'income') tInc[idx] += tx.baseAmount; else tExp[idx] += tx.baseAmount; }
+            });
+
+            const trendCtx = document.getElementById('trendChart');
+            if (trendCtx) {
+                if (trendChartInstance) trendChartInstance.destroy();
+                trendChartInstance = new Chart(trendCtx, {
+                    type: 'bar',
+                    data: { labels: dateLabels, datasets: [ { label: '支出 (HKD)', data: tExp, backgroundColor: '#FFD166', borderColor: '#1e293b', borderWidth: 2, borderRadius: 4 }, { label: '收入 (HKD)', data: tInc, backgroundColor: '#06D6A0', borderColor: '#1e293b', borderWidth: 2, borderRadius: 4 } ] },
+                    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'top', labels: { font: {family: 'Nunito', weight: 'bold'} } } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { font: {family: 'Nunito', weight: 'bold'} } }, y: { stacked: true, border: { display: false }, ticks: { maxTicksLimit: 5, font: {family: 'Nunito', weight: 'bold'} } } } });
+            }
+        }
+
+        window.openWeatherModal = openWeatherModal; window.switchTab = switchTab; window.changeMonth = changeMonth;
+        window.setChartPeriod = setChartPeriod; window.calculateExchange = calculateExchange; window.openModal = openModal;
+        window.closeModal = closeModal; window.setType = setType; window.saveTransaction = saveTransaction;
+        window.useCurrentLocation = useCurrentLocation; window.searchCityWeather = searchCityWeather; 
+        window.closeWeatherModal = closeWeatherModal; window.closeDialog = closeDialog; window.deleteTransaction = deleteTransaction;
+        window.openNotifModal = openNotifModal; window.closeNotifModal = closeNotifModal; window.requestNotificationPermission = requestNotificationPermission;
+        window.addCreditCard = addCreditCard; window.markCardPaid = markCardPaid; window.deleteCard = deleteCard;
+        window.openBudgetModal = openBudgetModal; window.closeBudgetModal = closeBudgetModal; window.saveBudget = saveBudget;
+        window.openBgModal = openBgModal; window.closeBgModal = closeBgModal; window.handleBgUpload = handleBgUpload; window.removeBg = removeBg;
+
+        init();
+    </script>
+</body>
+</html>
