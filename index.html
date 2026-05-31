@@ -82,8 +82,8 @@
         <!-- 主應用程式畫面 -->
         <!-- ========================================== -->
         <div id="view-main" class="hidden w-full h-full flex flex-col">
-            <header class="bg-[#FFB5A7] text-gray-900 p-5 pt-8 rounded-b-[40px] cartoon-border cartoon-shadow mb-2 z-10 relative shrink-0">
-                <div class="flex justify-between items-center mb-4">
+            <header class="bg-[#FFB5A7] text-gray-900 p-5 pt-8 rounded-b-[40px] cartoon-border cartoon-shadow mb-4 z-10 relative shrink-0 transition-all duration-300">
+                <div class="flex justify-between items-center relative z-10">
                     <div class="bg-white/80 px-3 py-1 rounded-full cartoon-border border-2 text-xs font-black text-gray-800 flex items-center gap-1 shadow-sm relative z-10">
                         <i class="ph-fill ph-user-circle"></i> <span id="user-display" class="max-w-[120px] truncate">載入中...</span>
                     </div>
@@ -104,44 +104,52 @@
                     </div>
                 </div>
 
-                <div onclick="openWeatherModal()" class="bg-white/90 rounded-2xl p-3 flex items-center gap-3 cartoon-border cartoon-shadow-sm mb-5 cursor-pointer active-press group relative z-10">
-                    <div class="text-4xl" id="weather-icon">⏳</div>
-                    <div class="leading-tight flex-1">
-                        <div id="weather-text" class="font-black text-gray-800 text-sm">管家觀測天氣中...</div>
-                        <div id="weather-subtext" class="text-xs font-bold text-gray-500 mt-0.5">請稍候</div>
+                <!-- 可收合的內部區塊 -->
+                <div id="header-collapsible" class="transition-all duration-300 max-h-[500px] opacity-100 overflow-hidden mt-4 relative z-10">
+                    <div onclick="openWeatherModal()" class="bg-white/90 rounded-2xl p-3 flex items-center gap-3 cartoon-border cartoon-shadow-sm mb-5 cursor-pointer active-press group">
+                        <div class="text-4xl" id="weather-icon">⏳</div>
+                        <div class="leading-tight flex-1">
+                            <div id="weather-text" class="font-black text-gray-800 text-sm">管家觀測天氣中...</div>
+                            <div id="weather-subtext" class="text-xs font-bold text-gray-500 mt-0.5">請稍候</div>
+                        </div>
+                        <div class="text-gray-400 group-hover:text-gray-800 transition-colors"><i class="ph-bold ph-map-pin text-xl"></i></div>
                     </div>
-                    <div class="text-gray-400 group-hover:text-gray-800 transition-colors"><i class="ph-bold ph-map-pin text-xl"></i></div>
+
+                    <div class="flex justify-between items-end mb-4 relative">
+                        <div>
+                            <div class="text-gray-800 font-black text-sm mb-1 flex items-center gap-1" id="header-month-label">本月結餘 💰</div>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-2xl font-black" id="header-currency-symbol">HK$</span>
+                                <span class="text-4xl font-black tracking-tight" id="total-balance">0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3 pb-1">
+                        <div class="flex-1 bg-[#06D6A0] rounded-xl p-2 cartoon-border cartoon-shadow-sm flex items-center gap-2">
+                            <div class="bg-white/30 rounded-full p-1"><i class="ph-bold ph-arrow-down-left text-white"></i></div>
+                            <div>
+                                <div class="text-[10px] font-black text-gray-800">收入(換算)</div>
+                                <div class="font-black text-gray-900 leading-none" id="total-income">0</div>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-[#FFD166] rounded-xl p-2 cartoon-border cartoon-shadow-sm flex items-center gap-2">
+                            <div class="bg-white/40 rounded-full p-1"><i class="ph-bold ph-arrow-up-right text-gray-800"></i></div>
+                            <div>
+                                <div class="text-[10px] font-black text-gray-800">支出(換算)</div>
+                                <div class="font-black text-gray-900 leading-none" id="total-expense">0</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex justify-between items-end mb-4 relative">
-                    <div>
-                        <div class="text-gray-800 font-black text-sm mb-1 flex items-center gap-1" id="header-month-label">本月結餘 💰</div>
-                        <div class="flex items-baseline gap-1">
-                            <span class="text-2xl font-black" id="header-currency-symbol">HK$</span>
-                            <span class="text-4xl font-black tracking-tight" id="total-balance">0</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex gap-3">
-                    <div class="flex-1 bg-[#06D6A0] rounded-xl p-2 cartoon-border cartoon-shadow-sm flex items-center gap-2">
-                        <div class="bg-white/30 rounded-full p-1"><i class="ph-bold ph-arrow-down-left text-white"></i></div>
-                        <div>
-                            <div class="text-[10px] font-black text-gray-800">收入(換算)</div>
-                            <div class="font-black text-gray-900 leading-none" id="total-income">0</div>
-                        </div>
-                    </div>
-                    <div class="flex-1 bg-[#FFD166] rounded-xl p-2 cartoon-border cartoon-shadow-sm flex items-center gap-2">
-                        <div class="bg-white/40 rounded-full p-1"><i class="ph-bold ph-arrow-up-right text-gray-800"></i></div>
-                        <div>
-                            <div class="text-[10px] font-black text-gray-800">支出(換算)</div>
-                            <div class="font-black text-gray-900 leading-none" id="total-expense">0</div>
-                        </div>
-                    </div>
-                </div>
+                <!-- 頂部收合按鈕 -->
+                <button onclick="toggleHeader()" class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-8 bg-white rounded-full cartoon-border cartoon-shadow-sm flex items-center justify-center active-press z-20">
+                    <i id="header-toggle-icon" class="ph-bold ph-caret-up text-gray-800 text-sm"></i>
+                </button>
             </header>
 
-            <div class="flex px-4 gap-2 shrink-0 mb-2 mt-2 relative z-10">
+            <div class="flex px-4 gap-2 shrink-0 mb-2 mt-1 relative z-10">
                 <button id="tab-btn-list" onclick="switchTab('list')" class="flex-1 py-2 text-xs font-black bg-[#118AB2] text-white rounded-xl cartoon-border cartoon-shadow-sm active-press">收支日曆</button>
                 <button id="tab-btn-chart" onclick="switchTab('chart')" class="flex-1 py-2 text-xs font-black bg-white text-gray-400 border-2 border-gray-200 rounded-xl transition-all">管家報表</button>
                 <button id="tab-btn-currency" onclick="switchTab('currency')" class="flex-1 py-2 text-xs font-black bg-white text-gray-400 border-2 border-gray-200 rounded-xl transition-all">匯率轉換</button>
@@ -190,10 +198,22 @@
 
                 <!-- 圖表視圖 -->
                 <div id="view-chart" class="hidden p-4 pt-2">
-                    <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-2 px-1">
-                        <button onclick="setChartPeriod('weekly')" id="filter-weekly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0">本週</button>
-                        <button onclick="setChartPeriod('monthly')" id="filter-monthly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0">本月</button>
-                        <button onclick="setChartPeriod('yearly')" id="filter-yearly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0">今年</button>
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1 px-1">
+                            <button onclick="setChartPeriod('weekly')" id="filter-weekly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0">本週</button>
+                            <button onclick="setChartPeriod('monthly')" id="filter-monthly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0">本月</button>
+                            <button onclick="setChartPeriod('yearly')" id="filter-yearly" class="px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0">今年</button>
+                        </div>
+                        
+                        <!-- 🌟 新增：匯出下載按鈕 -->
+                        <div class="flex gap-2 shrink-0 px-1">
+                            <button onclick="exportChartDataCSV()" class="w-8 h-8 bg-[#06D6A0] text-gray-900 rounded-xl cartoon-border border-2 flex items-center justify-center active-press shadow-sm" title="下載 Excel (CSV)">
+                                <i class="ph-bold ph-download-simple text-base"></i>
+                            </button>
+                            <button onclick="exportChartImage()" class="w-8 h-8 bg-[#FFD166] text-gray-900 rounded-xl cartoon-border border-2 flex items-center justify-center active-press shadow-sm" title="下載圖表圖片">
+                                <i class="ph-bold ph-image text-base"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-6">
@@ -279,7 +299,13 @@
                 </div>
                 <div class="overflow-y-auto no-scrollbar flex-1 space-y-4 py-2">
                     
-                    <!-- 🌟 主要貨幣設定 -->
+                    <!-- 🌟 新增：管理員專區 (預設隱藏，只有 admin 登入才會顯示) -->
+                    <div id="admin-panel" class="hidden bg-[#EF476F]/10 p-4 rounded-2xl border-2 border-[#EF476F] shadow-sm">
+                        <h4 class="text-sm font-black text-[#EF476F] mb-1">👑 總管理員專區</h4>
+                        <p class="text-[10px] font-bold text-gray-600 mb-3">您擁有最高權限，可強制清除此設備上「所有」使用者的本機資料。</p>
+                        <button onclick="adminClearAllData()" class="w-full bg-[#EF476F] text-white py-2 rounded-xl font-black cartoon-border border-2 text-xs active-press">銷毀全系統數據</button>
+                    </div>
+
                     <div class="bg-white p-4 rounded-2xl border-2 border-slate-800 shadow-sm">
                         <h4 class="text-sm font-black text-slate-800 mb-1">💱 主要貨幣設定</h4>
                         <p class="text-[10px] font-bold text-gray-500 mb-3">更改管家計算總資產的預設貨幣 (更改後會自動為您換算歷史紀錄)。</p>
@@ -419,7 +445,7 @@
         let monthlyBudget = 0; 
         let customBgUrl = null; 
         let userLocation = { name: '香港', lat: 22.3193, lon: 114.1694 };
-        let userBaseCurrency = 'hkd'; // 🌟 新增：使用者自訂的主要貨幣
+        let userBaseCurrency = 'hkd';
 
         let expenseChartInstance = null, incomeChartInstance = null, trendChartInstance = null, overviewChartInstance = null;
         let currentChartPeriod = 'weekly';
@@ -464,6 +490,25 @@
 
         let currentType = 'expense';
         let selectedCategory = 'food';
+
+        let isHeaderCollapsed = false;
+        function toggleHeader() {
+            isHeaderCollapsed = !isHeaderCollapsed;
+            const collapsible = document.getElementById('header-collapsible');
+            const icon = document.getElementById('header-toggle-icon');
+            
+            if (isHeaderCollapsed) {
+                collapsible.classList.replace('max-h-[500px]', 'max-h-0');
+                collapsible.classList.replace('opacity-100', 'opacity-0');
+                collapsible.classList.replace('mt-4', 'mt-0');
+                icon.classList.replace('ph-caret-up', 'ph-caret-down');
+            } else {
+                collapsible.classList.replace('max-h-0', 'max-h-[500px]');
+                collapsible.classList.replace('opacity-0', 'opacity-100');
+                collapsible.classList.replace('mt-0', 'mt-4');
+                icon.classList.replace('ph-caret-down', 'ph-caret-up');
+            }
+        }
 
         // ==========================================
         // 🔒 本地帳號密碼註冊與登入
@@ -534,7 +579,15 @@
             
             viewAuth.classList.add('hidden');
             viewMain.classList.remove('hidden');
-            document.getElementById('user-display').innerText = username === 'guest' ? '訪客主人' : username;
+            
+            // 🌟 判斷是否為管理員
+            if (username === 'admin') {
+                document.getElementById('user-display').innerHTML = '👑 總管理員';
+                document.getElementById('admin-panel').classList.remove('hidden');
+            } else {
+                document.getElementById('user-display').innerText = username === 'guest' ? '訪客主人' : username;
+                document.getElementById('admin-panel').classList.add('hidden');
+            }
             
             loadUserData();
             showToast('歡迎回來！本地金庫已安全打開！', '🔑');
@@ -547,14 +600,13 @@
             creditCards = JSON.parse(localStorage.getItem(`cards_${currentUser}`) || '[]');
             monthlyBudget = parseFloat(localStorage.getItem(`budget_${currentUser}`) || '0');
             customBgUrl = localStorage.getItem(`bg_${currentUser}`) || null;
-            userBaseCurrency = localStorage.getItem(`ms_base_currency_${currentUser}`) || 'hkd'; // 讀取自訂貨幣
+            userBaseCurrency = localStorage.getItem(`ms_base_currency_${currentUser}`) || 'hkd';
             
             const weatherData = localStorage.getItem(`weather_${currentUser}`);
             userLocation = weatherData ? JSON.parse(weatherData) : { name: '香港', lat: 22.3193, lon: 114.1694 };
 
             applyBg();
             
-            // 同步選擇器的預設貨幣
             document.getElementById('base-currency-select').value = userBaseCurrency;
             document.getElementById('currency-select').value = userBaseCurrency;
             document.getElementById('calc-from-currency').value = userBaseCurrency;
@@ -572,7 +624,7 @@
             localStorage.setItem(`cards_${currentUser}`, JSON.stringify(creditCards));
             localStorage.setItem(`budget_${currentUser}`, monthlyBudget.toString());
             localStorage.setItem(`weather_${currentUser}`, JSON.stringify(userLocation));
-            localStorage.setItem(`ms_base_currency_${currentUser}`, userBaseCurrency); // 儲存自訂貨幣
+            localStorage.setItem(`ms_base_currency_${currentUser}`, userBaseCurrency); 
             if (customBgUrl) localStorage.setItem(`bg_${currentUser}`, customBgUrl);
             else localStorage.removeItem(`bg_${currentUser}`);
         }
@@ -594,6 +646,7 @@
 
         function exportBackup() {
             if (!currentUser) return;
+            if (currentUser === 'guest') return showToast('訪客無法匯出備份，請先註冊專屬帳號！', '🔒');
             const backupData = {
                 money_saver_backup: true, version: "1.1", username: currentUser,
                 transactions: transactions, creditCards: creditCards, monthlyBudget: monthlyBudget,
@@ -611,6 +664,11 @@
         }
 
         function importBackup(event) {
+            if (currentUser === 'guest') { 
+                showToast('訪客無法匯入資料，請先註冊專屬帳號！', '🔒'); 
+                document.getElementById('backup-file-input').value = ''; 
+                return; 
+            }
             const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -635,7 +693,7 @@
         }
 
         // ==========================================
-        // 💱 🌟 主要貨幣設定系統
+        // 💱 主要貨幣設定系統
         // ==========================================
         function saveBaseCurrency() {
             const newBase = document.getElementById('base-currency-select').value;
@@ -644,12 +702,10 @@
             const oldBase = userBaseCurrency;
             userBaseCurrency = newBase;
 
-            // 1. 將所有歷史紀錄轉換為新基礎貨幣的等值 BaseAmount
             transactions.forEach(tx => {
                 tx.baseAmount = (tx.amount / exchangeRates[tx.currency]) * exchangeRates[userBaseCurrency];
             });
 
-            // 2. 轉換現有預算
             if (monthlyBudget > 0) {
                 monthlyBudget = (monthlyBudget / exchangeRates[oldBase]) * exchangeRates[newBase];
                 document.getElementById('budget-input').value = Math.round(monthlyBudget);
@@ -771,6 +827,46 @@
         function requestNotificationPermission() { if ("Notification" in window) { Notification.requestPermission().then(permission => { if (permission === "granted") { showToast('已成功開啟系統推播！', '✅'); new Notification("開支小管家", { body: "測試通知：管家在此為您服務！🤖" }); } else { showToast('已拒絕或不支援推播通知', '❌'); } }); } else { showToast('您的瀏覽器不支援推播功能', '❌'); } }
 
         // ==========================================
+        // 🤖 AI 管家分析與預算建議
+        // ==========================================
+        function generateAISuggestion(monthIncomeBase, monthExpenseBase, thisMonthTx) {
+            const aiTextElement = document.getElementById('ai-suggestion-text');
+            if (!aiTextElement) return; 
+
+            const baseSymbol = supportedCurrencies[userBaseCurrency].symbol;
+            
+            if (monthlyBudget <= 0) {
+                aiTextElement.innerHTML = `目前沒有設定預算喔！點擊右方「設定預算」讓管家幫您規劃，控制每日開銷吧。🎯`;
+                return;
+            }
+
+            const remaining = monthlyBudget - monthExpenseBase;
+            const now = dayjs();
+            const endOfMonth = displayMonth.endOf('month');
+            
+            if (displayMonth.isSame(now, 'month')) {
+                const daysLeft = endOfMonth.date() - now.date() + 1; 
+                
+                if (remaining < 0) {
+                    aiTextElement.innerHTML = `🚨 警告！本月已超支 <span class="text-[#EF476F] font-black">${baseSymbol}${Math.abs(remaining).toLocaleString()}</span>！請盡量減少不必要的開銷！`;
+                } else if (remaining === 0) {
+                    aiTextElement.innerHTML = `⚠️ 本月預算已用盡！接下來的每一筆花費都會透支您的金庫喔！`;
+                } else {
+                    const dailyAvg = Math.floor(remaining / daysLeft);
+                    aiTextElement.innerHTML = `本月預算剩餘 <span class="text-[#118AB2] font-black">${baseSymbol}${Math.round(remaining).toLocaleString()}</span>。<br>距離月底還有 <span class="font-black text-gray-800">${daysLeft}</span> 天，建議平均每天花費不超過 <span class="text-[#06D6A0] font-black">${baseSymbol}${dailyAvg.toLocaleString()}</span> ☕`;
+                }
+            } else if (displayMonth.isBefore(now, 'month')) {
+                if (remaining < 0) {
+                    aiTextElement.innerHTML = `這個月超支了 <span class="text-[#EF476F] font-black">${baseSymbol}${Math.abs(remaining).toLocaleString()}</span>，下次要多加注意預算喔。`;
+                } else {
+                    aiTextElement.innerHTML = `這個月成功守住了預算，結餘 <span class="text-[#06D6A0] font-black">${baseSymbol}${Math.round(remaining).toLocaleString()}</span>，非常棒的理財！🎉`;
+                }
+            } else {
+                aiTextElement.innerHTML = `預先規劃未來！本月設定的預算為 <span class="text-[#118AB2] font-black">${baseSymbol}${monthlyBudget.toLocaleString()}</span>。`;
+            }
+        }
+
+        // ==========================================
         // 💱 匯率與天氣系統 
         // ==========================================
         async function fetchExchangeRates() {
@@ -787,7 +883,6 @@
             let optionsHTML = '';
             for (let key in supportedCurrencies) optionsHTML += `<option value="${key}">${supportedCurrencies[key].code} ${supportedCurrencies[key].name}</option>`;
             
-            // 賦值給所有下拉選單
             document.getElementById('currency-select').innerHTML = optionsHTML; 
             document.getElementById('currency-select').value = userBaseCurrency;
             
@@ -815,7 +910,6 @@
             const container = document.getElementById('quick-rates-container'); container.innerHTML = '';
             document.getElementById('quick-rates-title').innerText = `100 ${supportedCurrencies[userBaseCurrency].name}換算參考`;
             
-            // 選擇要顯示的其他貨幣 (排除當前主要貨幣)
             const baseRates = ['twd', 'jpy', 'usd', 'hkd', 'eur', 'cny', 'gbp'].filter(c => c !== userBaseCurrency).slice(0, 6);
             
             baseRates.forEach(cur => {
@@ -935,7 +1029,6 @@
             if (!currentUser) { showDialog('稍等一下', '請先登入帳號，管家才能為您記帳喔！', 'alert'); return; }
 
             const currency = document.getElementById('currency-select').value;
-            // 🌟 將輸入的貨幣換算成「使用者自訂的主要貨幣」
             let baseAmount = (amount / exchangeRates[currency]) * exchangeRates[userBaseCurrency];
 
             const newDate = document.getElementById('date-input').value;
@@ -973,7 +1066,6 @@
                 }
             });
 
-            // 🌟 更新 UI 上的貨幣符號
             const baseSymbol = supportedCurrencies[userBaseCurrency].symbol;
             document.getElementById('header-currency-symbol').innerText = baseSymbol;
             document.getElementById('budget-currency-symbol').innerText = baseSymbol;
@@ -1006,7 +1098,6 @@
                     const sign = isIncome ? '+' : '-';
                     const currInfo = supportedCurrencies[tx.currency || 'hkd'];
                     
-                    // 🌟 如果該筆帳目貨幣與使用者的預設貨幣不同，才顯示換算結果
                     const conversionText = (tx.currency !== userBaseCurrency) 
                         ? `<div class="text-[10px] text-gray-400 font-bold -mt-1 text-right tracking-tighter">≈ ${baseSymbol}${Math.round(tx.baseAmount).toLocaleString()}</div>` : '';
 
@@ -1031,7 +1122,7 @@
         }
 
         // ==========================================
-        // 📊 圖表系統 (Chart.js 完美還原版)
+        // 📊 圖表系統與資料匯出 (Chart.js + CSV 匯出)
         // ==========================================
         function switchTab(tab) {
             const tabs = ['list', 'chart', 'currency'];
@@ -1048,6 +1139,78 @@
                 document.getElementById(`filter-${p}`).className = (p === period) ? 'px-4 py-1.5 rounded-xl text-sm font-black bg-[#EF476F] text-white cartoon-border cartoon-shadow-sm shrink-0' : 'px-4 py-1.5 rounded-xl text-sm font-black bg-white text-gray-400 border-2 border-gray-200 shrink-0';
             });
             renderChart();
+        }
+
+        // 🌟 新增：將當前報表範圍的明細匯出成 Excel (CSV 格式)
+        function exportChartDataCSV() {
+            if (currentUser === 'guest') { showToast('訪客無法匯出 Excel 報表，請先註冊帳號！', '🔒'); return; }
+            const now = dayjs(); let startDate, endDate;
+            if (currentChartPeriod === 'weekly') { startDate = now.startOf('week'); endDate = now.endOf('week'); } 
+            else if (currentChartPeriod === 'monthly') { startDate = now.startOf('month'); endDate = now.endOf('month'); } 
+            else { startDate = now.startOf('year'); endDate = now.endOf('year'); }
+
+            const filteredTx = transactions.filter(t => {
+                const d = dayjs(t.date);
+                return (d.isAfter(startDate) || d.isSame(startDate, 'day')) && (d.isBefore(endDate) || d.isSame(endDate, 'day'));
+            });
+
+            if (filteredTx.length === 0) {
+                showToast('這段時間沒有資料可以匯出喔！', '⚠️');
+                return;
+            }
+
+            // 加入 BOM 標記，讓 Excel 可以直接正確顯示 UTF-8 中文
+            let csvContent = '\uFEFF'; 
+            csvContent += "日期,收支類型,分類,金額,幣別,換算主要貨幣金額,備註\n";
+
+            const allCategories = [...categories.expense, ...categories.income];
+
+            filteredTx.forEach(tx => {
+                const typeStr = tx.type === 'income' ? '收入' : '支出';
+                const catInfo = allCategories.find(c => c.id === tx.category) || {name: '其他'};
+                // 處理備註裡的逗號，避免破壞 CSV 格式
+                const note = tx.note ? `"${tx.note.replace(/"/g, '""')}"` : ''; 
+                
+                csvContent += `${tx.date},${typeStr},${catInfo.name},${tx.amount},${supportedCurrencies[tx.currency].code},${tx.baseAmount.toFixed(2)},${note}\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `管家報表明細_${currentChartPeriod}_${dayjs().format('YYYYMMDD')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Excel 明細報表已下載！📊', '✅');
+        }
+
+        // 🌟 新增：將當前的趨勢圖表匯出為 PNG 圖片
+        function exportChartImage() {
+            if (currentUser === 'guest') { showToast('訪客無法下載圖表圖片，請先註冊帳號！', '🔒'); return; }
+            const canvas = document.getElementById('trendChart');
+            if (!canvas || !trendChartInstance) {
+                showToast('圖表還沒準備好喔！', '⚠️');
+                return;
+            }
+            
+            // 建立一個有白色背景的臨時畫布 (Chart.js 預設是透明背景，轉出圖片會黑掉)
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const ctx = tempCanvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            ctx.drawImage(canvas, 0, 0);
+
+            const url = tempCanvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `管家趨勢圖表_${currentChartPeriod}_${dayjs().format('YYYYMMDD')}.png`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('圖表圖片已成功下載！🖼️', '✅');
         }
 
         function createDoughnutChart(ctxId, emptyStateId, dataArray, type) {
@@ -1096,7 +1259,6 @@
             if (trendCtx) {
                 if (trendChartInstance) trendChartInstance.destroy();
                 
-                // 🌟 圖表標籤自動更新為使用者的設定貨幣
                 const baseCode = supportedCurrencies[userBaseCurrency].code;
                 trendChartInstance = new Chart(trendCtx, {
                     type: 'bar',
@@ -1125,7 +1287,17 @@
             scrollContainer.addEventListener('touchend', async () => { if(!pulling) return; pulling = false; if(parseInt(ptrIndicator.style.height) > 40) { ptrIndicator.style.height = '40px'; document.getElementById('ptr-text').innerText = '載入中...'; await fetchExchangeRates(); updateUI(); setTimeout(() => { ptrIndicator.style.height='0'; ptrIndicator.style.opacity='0'; showToast('刷新成功'); document.getElementById('ptr-text').innerText = '下拉重新整理數據...'; }, 500); } else { ptrIndicator.style.height='0'; ptrIndicator.style.opacity='0'; } }, {passive: true});
         }
 
-        // 綁定全域函數 (確保 HTML 調用不會出錯)
+        // 🌟 管理員專屬功能
+        function adminClearAllData() {
+            if (currentUser !== 'admin') return;
+            showDialog('⚠️ 最高權限警告', '確定要銷毀這台設備上「所有使用者」的資料嗎？此操作將清空整個系統且不可逆轉！', 'confirm', () => {
+                localStorage.clear();
+                showToast('系統已全面重置，即將登出...', '💥');
+                setTimeout(() => location.reload(), 1500);
+            });
+        }
+
+        // 綁定全域函數
         window.openWeatherModal = openWeatherModal; window.switchTab = switchTab; window.changeMonth = changeMonth;
         window.setChartPeriod = setChartPeriod; window.calculateExchange = calculateExchange; window.openModal = openModal;
         window.closeModal = closeModal; window.setType = setType; window.saveTransaction = saveTransaction;
@@ -1141,6 +1313,12 @@
         
         window.handleLogin = handleLogin; window.handleRegister = handleRegister; window.handleGuestLogin = handleGuestLogin; window.handleLogout = handleLogout;
         window.saveBaseCurrency = saveBaseCurrency; // 🌟 新增綁定：主要貨幣儲存功能
+        window.toggleHeader = toggleHeader; 
+        
+        // 🌟 綁定新的匯出按鈕與管理員功能
+        window.exportChartDataCSV = exportChartDataCSV;
+        window.exportChartImage = exportChartImage;
+        window.adminClearAllData = adminClearAllData;
 
         window.onload = init;
     </script>
